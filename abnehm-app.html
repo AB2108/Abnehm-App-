@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#16a34a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Mein Abnehm-Plan</title>
+<style>
+  :root {
+    --green: #16a34a;
+    --green-dark: #15803d;
+    --green-light: #dcfce7;
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --text: #0f172a;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --blue: #2563eb;
+    --blue-light: #dbeafe;
+    --orange: #ea580c;
+    --orange-light: #ffedd5;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  body { padding-bottom: 90px; }
+
+  header {
+    background: linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%);
+    color: #fff;
+    padding: calc(env(safe-area-inset-top) + 18px) 20px 18px;
+    border-radius: 0 0 22px 22px;
+    box-shadow: 0 4px 14px rgba(22,163,74,0.25);
+  }
+  header h1 { margin: 0; font-size: 20px; font-weight: 700; }
+  header .sub { margin-top: 4px; font-size: 13px; opacity: 0.9; }
+
+  .container { padding: 16px; max-width: 560px; margin: 0 auto; }
+
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .card h2 { margin: 0 0 12px; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .card h3 { margin: 16px 0 8px; font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Datums-Navigation */
+  .datenav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+  .datenav button {
+    background: var(--card); border: 1px solid var(--border); color: var(--text);
+    width: 44px; height: 44px; border-radius: 12px; font-size: 20px; font-weight: 700;
+    box-shadow: var(--shadow); cursor: pointer;
+  }
+  .datenav .dlabel { text-align: center; flex: 1; }
+  .datenav .dlabel { position: relative; cursor: pointer; }
+  .datenav .dlabel .dday { font-size: 16px; font-weight: 700; }
+  .datenav .dlabel .ddate { font-size: 12px; color: var(--muted); }
+  .datenav .dlabel::after { content: "📅"; font-size: 11px; margin-left: 4px; opacity: 0.6; }
+  /* native Date-Input unsichtbar über dem Label, öffnet den Kalender beim Tippen */
+  .date-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: none; cursor: pointer; }
+  .datenav button:active { background: var(--bg); }
+
+  /* Fortschrittsring / Prozent heute */
+  .progress-ring-wrap { display: flex; align-items: center; gap: 16px; }
+  .ring { position: relative; width: 78px; height: 78px; flex-shrink: 0; }
+  .ring svg { transform: rotate(-90deg); }
+  .ring .pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; }
+  .ring-info { flex: 1; }
+  .ring-info .big { font-size: 15px; font-weight: 700; }
+  .ring-info .small { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Checklisten-Items */
+  .check-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 0; border-bottom: 1px solid var(--border); cursor: pointer;
+  }
+  .check-item:last-child { border-bottom: none; }
+  .check-box {
+    width: 26px; height: 26px; border-radius: 8px; border: 2px solid var(--border);
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; margin-top: 1px;
+  }
+  .check-item.done .check-box { background: var(--green); border-color: var(--green); }
+  .check-box svg { opacity: 0; transition: opacity 0.15s; }
+  .check-item.done .check-box svg { opacity: 1; }
+  .check-text { flex: 1; font-size: 14px; line-height: 1.4; }
+  .check-item.done .check-text { color: var(--muted); text-decoration: line-through; }
+  .check-text .tag {
+    display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px;
+    border-radius: 6px; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .tag.meal { background: var(--green-light); color: var(--green-dark); }
+  .tag.train { background: var(--blue-light); color: var(--blue); }
+  .tag.habit { background: var(--orange-light); color: var(--orange); }
+
+  /* Wasser-Tracker */
+  .water-glasses { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .glass {
+    width: 38px; height: 46px; border-radius: 6px 6px 10px 10px;
+    border: 2px solid var(--blue); background: transparent; position: relative; cursor: pointer;
+    display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
+  }
+  .glass.full { background: var(--blue); }
+  .glass.full::after { content: "💧"; font-size: 16px; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+  .water-label { font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+  /* Schritte input */
+  .steps-row { display: flex; align-items: center; gap: 10px; }
+  .steps-row input {
+    flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: 10px;
+    font-size: 16px; text-align: center;
+  }
+
+  /* Gewicht */
+  .weight-input-row { display: flex; gap: 8px; margin-bottom: 6px; }
+  .weight-input-row input {
+    flex: 1; padding: 14px; border: 1px solid var(--border); border-radius: 12px;
+    font-size: 18px; text-align: center; font-weight: 600;
+  }
+  .btn {
+    background: var(--green); color: #fff; border: none; border-radius: 12px;
+    padding: 14px 18px; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  .btn:active { background: var(--green-dark); }
+  .btn-block { width: 100%; }
+
+  .goalbar-wrap { margin: 4px 0 12px; }
+  .goalbar-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .goalbar { height: 14px; background: var(--bg); border-radius: 8px; overflow: hidden; }
+  .goalbar-fill { height: 100%; background: linear-gradient(90deg, var(--green), var(--green-dark)); border-radius: 8px; transition: width 0.4s; }
+
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .stat { background: var(--bg); border-radius: 12px; padding: 12px 8px; text-align: center; }
+  .stat .num { font-size: 20px; font-weight: 800; }
+  .stat .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .weight-list { margin-top: 8px; }
+  .weight-list .wrow { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .weight-list .wrow:last-child { border: none; }
+  .weight-list .wdate { color: var(--muted); }
+  .weight-list .wval { font-weight: 700; }
+  .weight-list .wdiff { font-size: 12px; padding: 2px 7px; border-radius: 6px; margin-left: 8px; }
+  .wdiff.down { background: var(--green-light); color: var(--green-dark); }
+  .wdiff.up { background: #fee2e2; color: #dc2626; }
+  .del { color: #cbd5e1; font-size: 18px; padding: 4px 8px; cursor: pointer; }
+
+  /* Essensplan & Gym Tabellen */
+  .meal-block { padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .meal-block:last-child { border: none; }
+  .meal-block .mname { font-size: 12px; font-weight: 700; color: var(--green-dark); text-transform: uppercase; letter-spacing: 0.3px; }
+  .meal-block .mdesc { font-size: 14px; margin-top: 3px; line-height: 1.4; }
+  .meal-block .mkcal { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .ex-item { padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .ex-item:last-child { border: none; }
+  .ex-head { display: flex; justify-content: space-between; align-items: center; }
+  .ex-name { font-size: 14px; font-weight: 600; }
+  .ex-scheme { font-size: 12px; color: var(--muted); }
+  .ex-weight { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+  .ex-weight input { width: 80px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 14px; }
+  .ex-weight label { font-size: 12px; color: var(--muted); }
+
+  .info-box { background: var(--green-light); border-radius: 12px; padding: 12px 14px; font-size: 13px; line-height: 1.5; color: var(--green-dark); }
+  .info-box b { color: var(--green-dark); }
+
+  .muted-note { font-size: 12px; color: var(--muted); line-height: 1.5; margin-top: 8px; }
+
+  /* Bottom Nav */
+  .nav {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+    background: var(--card); border-top: 1px solid var(--border);
+    display: flex; justify-content: space-around;
+    padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.05);
+  }
+  .nav button {
+    background: none; border: none; flex: 1; padding: 4px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    color: var(--muted); font-size: 11px; font-weight: 600;
+  }
+  .nav button.active { color: var(--green); }
+  .nav button svg { width: 24px; height: 24px; }
+
+  .tab { display: none; }
+  .tab.active { display: block; }
+
+  .day-pills { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 12px; }
+  .day-pills button {
+    flex-shrink: 0; padding: 8px 14px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--card); font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text);
+  }
+  .day-pills button.active { background: var(--green); color: #fff; border-color: var(--green); }
+
+  .empty { text-align: center; color: var(--muted); font-size: 13px; padding: 20px; }
+
+  /* Wochenstruktur-Editor */
+  .wstruct-row { padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .wstruct-row:last-child { border: none; }
+  .wstruct-day { font-size: 13px; font-weight: 700; display: block; margin-bottom: 6px; }
+  .wp-group { display: flex; gap: 6px; }
+  .wp-btn {
+    flex: 1; padding: 9px 4px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--card); font-size: 12px; font-weight: 600; cursor: pointer; color: var(--muted);
+  }
+  .wp-btn.active { background: var(--green); color: #fff; border-color: var(--green); }
+
+  /* Tagessumme Essensplan */
+  .total-box { margin-top: 14px; padding: 14px; background: var(--green-light); border-radius: 12px; }
+  .total-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .total-row:last-of-type { margin-bottom: 0; }
+  .total-label { font-size: 13px; font-weight: 700; color: var(--green-dark); }
+  .total-val { font-size: 17px; font-weight: 800; color: var(--green-dark); }
+  .total-target { font-size: 11px; color: var(--muted); font-weight: 600; }
+  .total-note { font-size: 11px; color: var(--muted); margin-top: 8px; line-height: 1.4; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="hdrTitle">Mein Abnehm-Plan 💪</h1>
+  <div class="sub" id="hdrSub">Ziel: 112 kg → 105 kg</div>
+</header>
+
+<div class="container">
+
+  <!-- ===== TAB: DASHBOARD ===== -->
+  <div class="tab" id="tab-dashboard">
+    <div id="dashboardBody"></div>
+  </div>
+
+  <!-- ===== TAB: HEUTE ===== -->
+  <div class="tab active" id="tab-heute">
+    <div class="datenav">
+      <button onclick="changeDay(-1)">‹</button>
+      <div class="dlabel" onclick="document.getElementById('datePicker').showPicker && document.getElementById('datePicker').showPicker()">
+        <div class="dday" id="navDay">Heute</div>
+        <div class="ddate" id="navDate"></div>
+        <input type="date" id="datePicker" class="date-input" onchange="pickDate(this.value)">
+      </div>
+      <button onclick="changeDay(1)" id="nextBtn">›</button>
+    </div>
+
+    <div class="card">
+      <div class="progress-ring-wrap">
+        <div class="ring">
+          <svg width="78" height="78">
+            <circle cx="39" cy="39" r="33" fill="none" stroke="#e2e8f0" stroke-width="8"/>
+            <circle id="ringFill" cx="39" cy="39" r="33" fill="none" stroke="#16a34a" stroke-width="8"
+              stroke-linecap="round" stroke-dasharray="207" stroke-dashoffset="207"/>
+          </svg>
+          <div class="pct" id="ringPct">0%</div>
+        </div>
+        <div class="ring-info">
+          <div class="big" id="ringBig">Los geht's!</div>
+          <div class="small" id="ringSmall">Hake deine Ziele für heute ab</div>
+        </div>
+      </div>
+      <div id="kcalToday" style="margin-top:16px"></div>
+    </div>
+
+    <div class="card">
+      <h2>🍽️ Ernährung (Plan)</h2>
+      <div id="mealChecks"></div>
+    </div>
+
+    <div class="card">
+      <h2>🍴 Eigene Lebensmittel</h2>
+      <div class="muted-note" style="margin-top:0;margin-bottom:10px">
+        Etwas anderes gegessen? Trag es hier mit geschätzten Kalorien ein (Eiweiß optional).
+      </div>
+      <input type="text" id="foodName" placeholder="z. B. Pizza, halb"
+        style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:15px;margin-bottom:8px">
+      <div style="display:flex;gap:8px">
+        <input type="number" id="foodKcal" inputmode="numeric" placeholder="kcal"
+          style="flex:1;min-width:0;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:15px;text-align:center">
+        <input type="number" id="foodProt" inputmode="numeric" placeholder="g Eiweiß"
+          style="flex:1;min-width:0;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:15px;text-align:center">
+        <button class="btn" id="foodAddBtn" style="padding:12px 18px" onclick="addFood()">+</button>
+      </div>
+      <div id="foodLogList" style="margin-top:6px"></div>
+      <div id="foodLogTotal"></div>
+    </div>
+
+    <div class="card">
+      <h2>🏋️ Training & Bewegung</h2>
+      <div id="trainChecks"></div>
+    </div>
+
+    <div class="card">
+      <h2>💧 Wasser</h2>
+      <div class="water-glasses" id="waterGlasses"></div>
+      <div class="water-label" id="waterLabel">0 von 8 Gläsern (Ziel: ~2,5–3 L)</div>
+    </div>
+
+    <div class="card">
+      <h2>👟 Schritte</h2>
+      <div class="steps-row">
+        <input type="number" id="stepsInput" inputmode="numeric" placeholder="z. B. 8500" oninput="saveSteps()">
+        <span style="font-size:13px;color:var(--muted)">/ 8.000</span>
+      </div>
+      <div class="muted-note">Dein größter versteckter Hebel gegen den Bürojob.</div>
+    </div>
+  </div>
+
+  <!-- ===== TAB: GEWICHT ===== -->
+  <div class="tab" id="tab-gewicht">
+    <div class="datenav">
+      <button onclick="changeDay(-1)">‹</button>
+      <div class="dlabel" onclick="document.getElementById('datePicker4').showPicker && document.getElementById('datePicker4').showPicker()">
+        <div class="dday" id="navDay4">Heute</div>
+        <div class="ddate" id="navDate4"></div>
+        <input type="date" id="datePicker4" class="date-input" onchange="pickDate(this.value)">
+      </div>
+      <button onclick="changeDay(1)" id="nextBtn4">›</button>
+    </div>
+    <div class="card">
+      <h2>⚖️ Gewicht eintragen</h2>
+      <div class="weight-input-row">
+        <input type="number" id="weightInput" inputmode="decimal" step="0.1" placeholder="kg, z. B. 111.5">
+        <button class="btn" id="weightSaveBtn" onclick="addWeight()">Speichern</button>
+      </div>
+      <div class="muted-note" id="weightDayHint">Tipp: Immer morgens, nüchtern, nach dem Toilettengang wiegen.</div>
+    </div>
+
+    <div class="card">
+      <h2>🎚️ Ziel anpassen</h2>
+      <div style="display:flex;gap:10px">
+        <div style="flex:1">
+          <label style="font-size:12px;color:var(--muted)">Startgewicht (kg)</label>
+          <input type="number" id="startInput" inputmode="decimal" step="0.1"
+            style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:16px;text-align:center;margin-top:4px">
+        </div>
+        <div style="flex:1">
+          <label style="font-size:12px;color:var(--muted)">Zielgewicht (kg)</label>
+          <input type="number" id="goalInput" inputmode="decimal" step="0.1"
+            style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:16px;text-align:center;margin-top:4px">
+        </div>
+      </div>
+      <button class="btn btn-block" style="margin-top:12px" onclick="saveSettings()">Ziel speichern</button>
+      <div class="muted-note">Du kannst dein Zielgewicht jederzeit weiter heruntersetzen – Fortschritt &amp; Diagramm passen sich automatisch an.</div>
+    </div>
+
+    <div class="card">
+      <h2>🎯 Fortschritt zum Ziel</h2>
+      <div class="stat-grid">
+        <div class="stat"><div class="num" id="statCurrent">–</div><div class="lbl">Aktuell</div></div>
+        <div class="stat"><div class="num" id="statLost">0 kg</div><div class="lbl">Verloren</div></div>
+        <div class="stat"><div class="num" id="statLeft">7 kg</div><div class="lbl">bis Ziel</div></div>
+      </div>
+      <div class="goalbar-wrap">
+        <div class="goalbar-labels"><span>112 kg</span><span id="goalPct">0%</span><span>105 kg</span></div>
+        <div class="goalbar"><div class="goalbar-fill" id="goalFill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📈 Verlauf</h2>
+      <div id="chartWrap"><div class="empty">Noch keine Daten – trag dein erstes Gewicht ein.</div></div>
+    </div>
+
+    <div class="card">
+      <h2>📋 Einträge</h2>
+      <div class="weight-list" id="weightList"><div class="empty">Noch keine Einträge.</div></div>
+    </div>
+  </div>
+
+  <!-- ===== TAB: ESSEN ===== -->
+  <div class="tab" id="tab-essen">
+    <div class="datenav">
+      <button onclick="changeDay(-1)">‹</button>
+      <div class="dlabel" onclick="document.getElementById('datePicker2').showPicker && document.getElementById('datePicker2').showPicker()">
+        <div class="dday" id="navDay2">Heute</div>
+        <div class="ddate" id="navDate2"></div>
+        <input type="date" id="datePicker2" class="date-input" onchange="pickDate(this.value)">
+      </div>
+      <button onclick="changeDay(1)" id="nextBtn2">›</button>
+    </div>
+    <div class="card">
+      <h2 id="mealPlanTitle">Essensplan</h2>
+      <div id="mealPlanBody"></div>
+      <div id="mealPlanTotal"></div>
+    </div>
+    <div class="card">
+      <div class="info-box">
+        <b>Getränke-Regel:</b> Wasser, ungesüßter Tee, schwarzer Kaffee – unbegrenzt.
+        Säfte, Softdrinks & Alkohol stark reduzieren (das sind die versteckten Kalorien).
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB: GYM ===== -->
+  <div class="tab" id="tab-gym">
+    <div class="datenav">
+      <button onclick="changeDay(-1)">‹</button>
+      <div class="dlabel" onclick="document.getElementById('datePicker3').showPicker && document.getElementById('datePicker3').showPicker()">
+        <div class="dday" id="navDay3">Heute</div>
+        <div class="ddate" id="navDate3"></div>
+        <input type="date" id="datePicker3" class="date-input" onchange="pickDate(this.value)">
+      </div>
+      <button onclick="changeDay(1)" id="nextBtn3">›</button>
+    </div>
+    <div class="card">
+      <h2>🏋️ Ganzkörper-Workout</h2>
+      <div class="muted-note" style="margin-top:0;margin-bottom:10px" id="gymDayHint">
+        Du trägst die Gewichte für heute ein.
+      </div>
+      <div id="gymBody"></div>
+      <div class="muted-note">Jede Eingabe wird automatisch für den ausgewählten Tag gespeichert. Über den Kalender 📅 kommst du zu vergangenen Workouts.</div>
+    </div>
+    <div class="card">
+      <div class="info-box">
+        <b>Progression = der Schlüssel.</b> Schaffst du locker mehr als die obere Wiederholungszahl,
+        erhöhe nächste Einheit das Gewicht. Die letzten 2 Wdh sollen anstrengend sein.
+      </div>
+    </div>
+    <div class="card">
+      <h2>📊 Dein Fortschritt</h2>
+      <div id="gymProgress"></div>
+    </div>
+    <div class="card">
+      <h2>🗓️ Absolvierte Workouts</h2>
+      <div id="gymHistory"></div>
+    </div>
+    <div class="card">
+      <h2>📅 Wochenstruktur anpassen</h2>
+      <div class="muted-note" style="margin-top:0;margin-bottom:10px">
+        Lege pro Tag fest, ob Gym, Laufen oder Ruhe ansteht. Der „Heute“-Tab übernimmt das automatisch.
+      </div>
+      <div id="weekStructure"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:4px">
+    <h2>💾 Daten-Backup</h2>
+    <div class="muted-note" style="margin-top:0;margin-bottom:12px">
+      Sichert <b>alle</b> Daten auf einmal – also <b>alle Tage</b> und <b>alle Bereiche</b>
+      (Häkchen, Gewicht, eigene Lebensmittel, Workouts, Ziel & Wochenplan), nicht nur den aktuellen Tag.
+      Deine Daten liegen ohnehin dauerhaft lokal auf dem Handy; das Backup schützt zusätzlich,
+      falls du den Browser wechselst oder die Browserdaten löschst.
+    </div>
+    <button class="btn btn-block" onclick="exportData()">⬇️ Komplett-Backup speichern (alle Daten)</button>
+    <button class="btn btn-block" style="margin-top:10px;background:var(--blue)" onclick="document.getElementById('importFile').click()">⬆️ Backup wiederherstellen</button>
+    <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importData(this)">
+  </div>
+
+  <div class="card" style="margin-top:4px">
+    <div class="muted-note">
+      📱 <b>Als App speichern:</b> Im Browser-Menü „Zum Startbildschirm hinzufügen“ wählen.
+      Alle Daten bleiben lokal auf deinem Handy gespeichert.
+    </div>
+  </div>
+
+</div>
+
+<!-- Bottom Navigation -->
+<div class="nav">
+  <button data-tab="dashboard" onclick="switchTab('dashboard')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+    Übersicht
+  </button>
+  <button class="active" data-tab="heute" onclick="switchTab('heute')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
+    Heute
+  </button>
+  <button data-tab="gewicht" onclick="switchTab('gewicht')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18l5-5 4 4 8-8"/><path d="M16 9h5v5"/></svg>
+    Gewicht
+  </button>
+  <button data-tab="essen" onclick="switchTab('essen')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v8a3 3 0 003 3v7M8 3v6M11 3v6M17 3c-1.5 0-2 4-2 7h4v11"/></svg>
+    Essen
+  </button>
+  <button data-tab="gym" onclick="switchTab('gym')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 7v10M18 7v10M4 9v6M20 9v6M6 12h12"/></svg>
+    Gym
+  </button>
+</div>
+
+<script>
+/* ================= DATEN ================= */
+const WEEKDAYS = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+
+// Mahlzeiten pro Wochentag (0=So ... 6=Sa)
+// Hinweis: Reis, Nudeln, Kartoffeln & Linsen sind als GEKOCHTES Gewicht angegeben.
+const MEALS = {
+  1: [ // Montag
+    {n:"Frühstück", d:"250 g Magerquark + 100 g Beeren + 30 g Haferflocken", k:"380 kcal · 35 g Eiweiß"},
+    {n:"Mittag", d:"180 g Hähnchenbrust + 200 g Reis (gekocht) + 200 g Brokkoli", k:"650 kcal · 55 g Eiweiß"},
+    {n:"Snack", d:"1 Apfel (150 g) + 30 g Mandeln", k:"280 kcal · 7 g Eiweiß"},
+    {n:"Abend", d:"Rührei aus 3 Eiern (165 g) + 2 Scheiben Vollkornbrot (90 g) + 1 Tomate (100 g)", k:"520 kcal · 30 g Eiweiß"},
+  ],
+  2: [ // Dienstag (Gym)
+    {n:"Frühstück", d:"Rührei aus 3 Eiern (165 g) + 1 Scheibe Vollkornbrot (45 g) + 150 g Skyr", k:"480 kcal · 40 g Eiweiß"},
+    {n:"Mittag", d:"180 g Putenbrust + 250 g Süßkartoffel + 150 g Salat (+ 1 TL Öl, 5 g)", k:"600 kcal · 50 g Eiweiß"},
+    {n:"Snack (vor Gym)", d:"1 Banane (120 g) + 200 g Magerquark", k:"280 kcal · 25 g Eiweiß"},
+    {n:"Abend", d:"250 g Magerquark + 100 g Beeren + 1 EL Honig (20 g)", k:"350 kcal · 32 g Eiweiß"},
+  ],
+  3: [ // Mittwoch
+    {n:"Frühstück", d:"200 g Skyr + 40 g Haferflocken + 100 g Beeren", k:"400 kcal · 30 g Eiweiß"},
+    {n:"Mittag", d:"150 g Lachsfilet + 200 g Kartoffeln (gekocht) + 200 g Gemüse", k:"620 kcal · 38 g Eiweiß"},
+    {n:"Snack", d:"30 g Nüsse + 1 Apfel (150 g)", k:"280 kcal · 7 g Eiweiß"},
+    {n:"Abend", d:"Eintopf: 250 g Linsen (gekocht) + 200 g Gemüse", k:"500 kcal · 28 g Eiweiß"},
+  ],
+  4: [ // Donnerstag (Gym)
+    {n:"Frühstück", d:"250 g Magerquark + 1 Banane (120 g) + 30 g Haferflocken", k:"420 kcal · 35 g Eiweiß"},
+    {n:"Mittag", d:"180 g Hähnchen + 200 g Vollkornnudeln (gekocht) + 150 g Tomatensauce", k:"680 kcal · 55 g Eiweiß"},
+    {n:"Snack", d:"150 g Skyr + 100 g Beeren", k:"150 kcal · 18 g Eiweiß"},
+    {n:"Abend", d:"1 Dose Thunfisch im eigenen Saft (110 g abgetropft) + 2 Scheiben Vollkornbrot (90 g) + ½ Gurke (100 g)", k:"450 kcal · 40 g Eiweiß"},
+  ],
+  5: [ // Freitag
+    {n:"Frühstück", d:"Rührei aus 3 Eiern (165 g) + 1 Scheibe Vollkornbrot (45 g) + ½ Avocado (70 g)", k:"520 kcal · 28 g Eiweiß"},
+    {n:"Mittag", d:"150 g mageres Rinderhack + 150 g Reis (gekocht) + 200 g Gemüsepfanne", k:"640 kcal · 45 g Eiweiß"},
+    {n:"Snack", d:"200 g Magerquark + 1 Apfel (150 g)", k:"230 kcal · 25 g Eiweiß"},
+    {n:"Abend", d:"150 g Salat + 60 g Feta + 150 g Kichererbsen (Dose, abgetropft)", k:"480 kcal · 22 g Eiweiß"},
+  ],
+  6: [ // Samstag (Lauf)
+    {n:"Frühstück", d:"60 g Haferflocken + 150 g Skyr + 100 g Beeren + 20 g Nüsse", k:"520 kcal · 30 g Eiweiß"},
+    {n:"Mittag", d:"1 Vollkorn-Wrap (60 g) + 120 g Hähnchen + 100 g Salat", k:"600 kcal · 45 g Eiweiß"},
+    {n:"Snack", d:"1 Banane (120 g) + 200 g Magerquark", k:"250 kcal · 22 g Eiweiß"},
+    {n:"Abend", d:"300 g Ofengemüse + 150 g Hähnchen", k:"500 kcal · 40 g Eiweiß"},
+  ],
+  0: [ // Sonntag (Flex)
+    {n:"Frühstück", d:"Leicht & proteinreich, z. B. 200 g Magerquark + 100 g Obst", k:"~400 kcal"},
+    {n:"Hauptmahlzeit", d:"Flex-Tag: ein normales Essen (z. B. mit der Familie)", k:"frei – bewusst genießen"},
+    {n:"Abend", d:"Leicht halten, z. B. 150 g Salat + 200 g Magerquark", k:"~350 kcal"},
+  ],
+};
+
+// Trainingsarten – der konkrete Wochentag wird über dayPlan (anpassbar) zugeordnet
+const TRAIN_TYPES = {
+  gym:  {tag:"Gym",      t:"Ganzkörper-Krafttraining (siehe Gym-Tab)", icon:"🏋️", short:"Gym"},
+  lauf: {tag:"Laufen",   t:"45–60 min lockeres Laufen",                icon:"🏃", short:"Laufen"},
+  ruhe: {tag:"Bewegung", t:"Ruhetag – optional Spaziergang",           icon:"😴", short:"Ruhe"},
+};
+function trainingFor(wd){ return TRAIN_TYPES[dayPlan[wd]] || TRAIN_TYPES.ruhe; }
+
+// Tägliche Gewohnheit (immer)
+const DAILY_HABIT = {tag:"Eiweiß", t:"Eiweiß-Ziel ~150 g – wird automatisch gehakt, sobald erreicht"};
+const PROTEIN_TARGET = 150;
+
+const GYM_EXERCISES = [
+  {id:"beinpresse", n:"Beinpresse", s:"3 × 10–12"},
+  {id:"brustpresse", n:"Brustpresse / Bankdrücken", s:"3 × 8–12"},
+  {id:"rudern", n:"Rudern am Kabel/Gerät", s:"3 × 10–12"},
+  {id:"schulter", n:"Schulterdrücken", s:"3 × 10–12"},
+  {id:"latzug", n:"Latzug", s:"3 × 10–12"},
+  {id:"beinbeuger", n:"Beinbeuger", s:"3 × 12"},
+  {id:"plank", n:"Plank", s:"3 × 30–45 s"},
+];
+
+// Anpassbarer Wochenplan (0=So ... 6=Sa) – Standard: Di+Do Gym, Sa Laufen
+let dayPlan = load("ab_dayplan", {0:"ruhe",1:"ruhe",2:"gym",3:"ruhe",4:"gym",5:"ruhe",6:"lauf"});
+
+let settings = load("ab_settings", {start:112, goal:105});
+function GOAL_START(){ return settings.start; }
+function GOAL_END(){ return settings.goal; }
+
+/* ================= STATE & STORAGE ================= */
+let viewDate = new Date();
+
+function fmtDate(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function load(key, def){ try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch(e){ return def; } }
+function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+
+let checks = load("ab_checks", {});
+let water  = load("ab_water", {});
+let steps  = load("ab_steps", {});
+let weights = load("ab_weights", []);
+let gymWeights = load("ab_gym", {});
+let gymHistory = load("ab_gym_history", []);
+let foodLog = load("ab_foodlog", {});
+
+/* ================= TAB SWITCHING ================= */
+function switchTab(tab){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.getElementById("tab-"+tab).classList.add("active");
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active", b.dataset.tab===tab));
+  if(tab==="essen") renderMealPlan();
+  if(tab==="heute") renderHeute();
+  if(tab==="gym") renderGym();
+  if(tab==="gewicht") renderGewicht();
+  if(tab==="dashboard") renderDashboard();
+  window.scrollTo(0,0);
+}
+
+/* ================= HEUTE-TAB ================= */
+function dayKey(){ return fmtDate(viewDate); }
+function isToday(){ return fmtDate(new Date()) === fmtDate(viewDate); }
+function isFuture(){ return fmtDate(viewDate) > fmtDate(new Date()); }
+
+function changeDay(delta){
+  const d = new Date(viewDate); d.setDate(d.getDate()+delta);
+  if(fmtDate(d) > fmtDate(new Date())) return; // keine Zukunft
+  viewDate = d;
+  renderHeute();
+  renderMealPlan();
+  renderGym();
+  renderGewicht();
+}
+
+// Auswahl über den Kalender
+function pickDate(value){
+  if(!value) return;
+  const d = new Date(value+"T00:00");
+  if(isNaN(d)) return;
+  if(fmtDate(d) > fmtDate(new Date())) return; // keine Zukunft
+  viewDate = d;
+  renderHeute();
+  renderMealPlan();
+  renderGym();
+  renderGewicht();
+}
+
+// Beide Datums-Navigationen (Heute- & Essen-Tab) synchron halten
+function updateDateNav(){
+  const today = isToday();
+  const wd = viewDate.getDay();
+  const label = today ? "Heute" : WEEKDAYS[wd];
+  const dateStr = viewDate.toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"});
+  const iso = fmtDate(viewDate);
+  const maxIso = fmtDate(new Date());
+  ["","2","3","4"].forEach(s=>{
+    const day=document.getElementById("navDay"+s), dt=document.getElementById("navDate"+s),
+          pk=document.getElementById("datePicker"+s), nb=document.getElementById("nextBtn"+s);
+    if(day) day.textContent = label;
+    if(dt) dt.textContent = dateStr;
+    if(pk){ pk.value = iso; pk.max = maxIso; }
+    if(nb) nb.style.opacity = isFuture() ? "0.3" : "1";
+  });
+}
+
+function renderHeute(){
+  const wd = viewDate.getDay();
+  updateDateNav();
+
+  const key = dayKey();
+  const dayChecks = checks[key] || {};
+
+  // Mahlzeiten
+  const mealHtml = (MEALS[wd]||[]).map((m,i)=>{
+    const id = "meal"+i;
+    const done = dayChecks[id];
+    return checkItemHtml(id, "meal", m.n, m.d + " · " + m.k, done);
+  }).join("");
+  document.getElementById("mealChecks").innerHTML = mealHtml;
+
+  // Training (aus anpassbarem Wochenplan) + tägliche Eiweiß-Gewohnheit
+  const tr = trainingFor(wd);
+  let trainHtml = checkItemHtml("train0", "train", tr.tag, tr.t, dayChecks["train0"]);
+  trainHtml += checkItemHtml("habit_protein", "habit", DAILY_HABIT.tag, DAILY_HABIT.t, dayChecks["habit_protein"]);
+  document.getElementById("trainChecks").innerHTML = trainHtml;
+
+  renderWater();
+  renderSteps();
+  renderFoodLog();
+  attachCheckHandlers();
+  updateRing();
+}
+
+function checkItemHtml(id, tagClass, tagText, text, done){
+  return `<div class="check-item ${done?'done':''}" data-id="${id}">
+    <div class="check-box"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div>
+    <div class="check-text"><span class="tag ${tagClass}">${tagText}</span><br>${text}</div>
+  </div>`;
+}
+
+function attachCheckHandlers(){
+  document.querySelectorAll("#mealChecks .check-item, #trainChecks .check-item").forEach(el=>{
+    // Eiweiß-Haken ist vollautomatisch (vom Eiweiß-Ist abhängig) – nicht manuell schaltbar
+    if(el.dataset.id==="habit_protein"){
+      el.style.cursor="default";
+      el.onclick = ()=>{ const a=actualForDate(dayKey()); alert("Dieser Haken setzt sich automatisch bei "+PROTEIN_TARGET+" g Eiweiß.\nAktuell: "+a.prot+" g."); };
+      return;
+    }
+    el.onclick = ()=>{
+      const key = dayKey();
+      const id = el.dataset.id;
+      checks[key] = checks[key] || {};
+      const nowChecked = !checks[key][id];
+      if(nowChecked) checks[key][id] = true; else delete checks[key][id];
+      if(Object.keys(checks[key]).length===0) delete checks[key];
+      save("ab_checks", checks);
+      el.classList.toggle("done", nowChecked);
+      updateRing();
+    };
+  });
+}
+
+function renderWater(){
+  const key = dayKey();
+  const count = water[key] || 0;
+  let html = "";
+  for(let i=1;i<=8;i++){
+    html += `<div class="glass ${i<=count?'full':''}" onclick="setWater(${i})"></div>`;
+  }
+  document.getElementById("waterGlasses").innerHTML = html;
+  document.getElementById("waterLabel").textContent = count+" von 8 Gläsern (Ziel: ~2,5–3 L)";
+}
+function setWater(n){
+  const key = dayKey();
+  // Tippt man auf das aktuell letzte volle Glas -> eins weniger, sonst auf n setzen
+  water[key] = (water[key]===n) ? n-1 : n;
+  if(water[key]<=0) delete water[key];
+  save("ab_water", water);
+  renderWater();
+  updateRing();
+}
+
+function renderSteps(){
+  const key = dayKey();
+  document.getElementById("stepsInput").value = steps[key] || "";
+}
+function saveSteps(){
+  const key = dayKey();
+  const v = parseInt(document.getElementById("stepsInput").value)||0;
+  if(v>0) steps[key]=v; else delete steps[key];
+  save("ab_steps", steps);
+  updateRing();
+}
+
+let foodEditIndex = -1;
+function addFood(){
+  const key = dayKey();
+  const name = document.getElementById("foodName").value.trim();
+  const kcal = parseInt(document.getElementById("foodKcal").value)||0;
+  const prot = parseInt(document.getElementById("foodProt").value)||0;
+  if(!name){ alert("Bitte einen Namen eingeben."); return; }
+  if(kcal<=0){ alert("Bitte die Kalorien eingeben."); return; }
+  foodLog[key] = foodLog[key] || [];
+  if(foodEditIndex>=0 && foodLog[key][foodEditIndex]){
+    foodLog[key][foodEditIndex] = {name, kcal, prot}; // bestehenden Eintrag ändern
+  } else {
+    foodLog[key].push({name, kcal, prot});
+  }
+  save("ab_foodlog", foodLog);
+  cancelFoodEdit();
+  renderFoodLog();
+  updateRing();
+}
+function editFood(i){
+  const key = dayKey();
+  const f = foodLog[key] && foodLog[key][i];
+  if(!f) return;
+  document.getElementById("foodName").value = f.name;
+  document.getElementById("foodKcal").value = f.kcal;
+  document.getElementById("foodProt").value = f.prot || "";
+  foodEditIndex = i;
+  document.getElementById("foodAddBtn").textContent = "✓";
+  document.getElementById("foodName").focus();
+  renderFoodLog();
+}
+function cancelFoodEdit(){
+  foodEditIndex = -1;
+  document.getElementById("foodName").value="";
+  document.getElementById("foodKcal").value="";
+  document.getElementById("foodProt").value="";
+  document.getElementById("foodAddBtn").textContent = "+";
+}
+function deleteFood(i){
+  const key = dayKey();
+  if(!foodLog[key]) return;
+  foodLog[key].splice(i,1);
+  if(foodLog[key].length===0) delete foodLog[key];
+  save("ab_foodlog", foodLog);
+  cancelFoodEdit();
+  renderFoodLog();
+  updateRing();
+}
+function renderFoodLog(){
+  const key = dayKey();
+  const items = foodLog[key] || [];
+  const list = document.getElementById("foodLogList");
+  const totalEl = document.getElementById("foodLogTotal");
+  if(items.length===0){
+    list.innerHTML = "";
+    totalEl.innerHTML = "";
+    return;
+  }
+  list.innerHTML = items.map((f,i)=>
+    `<div class="wrow" style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:14px;${i===foodEditIndex?'background:var(--blue-light);border-radius:8px':''}">
+      <span style="cursor:pointer" onclick="editFood(${i})">✏️ ${f.name}</span>
+      <span><span style="font-weight:700">${f.kcal} kcal</span>${f.prot?` · ${f.prot} g E`:""}
+      <span class="del" onclick="deleteFood(${i})">✕</span></span>
+    </div>`
+  ).join("");
+  if(foodEditIndex>=0){
+    list.innerHTML += `<div class="muted-note" style="margin-top:6px">✏️ Bearbeiten: Werte oben anpassen und auf ✓ tippen. <span style="color:var(--blue);cursor:pointer;font-weight:600" onclick="cancelFoodEdit();renderFoodLog()">Abbrechen</span></div>`;
+  }
+  const kcal = items.reduce((s,f)=>s+f.kcal,0);
+  const prot = items.reduce((s,f)=>s+f.prot,0);
+  totalEl.innerHTML = `<div class="total-box" style="margin-top:10px">
+    <div class="total-row">
+      <span class="total-label">Zusätzlich gegessen</span>
+      <span class="total-val">${kcal} kcal</span>
+    </div>
+    ${prot>0?`<div class="total-row"><span class="total-label">davon Eiweiß</span><span class="total-val">${prot} g</span></div>`:""}
+  </div>`;
+}
+
+function updateRing(){
+  const key = dayKey();
+  const wd = viewDate.getDay();
+
+  // Eiweiß-Ist berechnen und Haken automatisch setzen/zurücksetzen
+  // (keine leeren Tages-Einträge anlegen – das verfälschte sonst die Statistik)
+  const act = actualForDate(key);
+  const protReached = act.prot >= PROTEIN_TARGET;
+  const hasProt = checks[key] && checks[key].habit_protein;
+  if(protReached && !hasProt){
+    checks[key] = checks[key] || {};
+    checks[key].habit_protein = true; save("ab_checks", checks);
+  } else if(!protReached && hasProt){
+    delete checks[key].habit_protein;
+    if(Object.keys(checks[key]).length===0) delete checks[key];
+    save("ab_checks", checks);
+  }
+  const protEl = document.querySelector('#trainChecks .check-item[data-id="habit_protein"]');
+  if(protEl) protEl.classList.toggle("done", protReached);
+
+  const dayChecks = checks[key] || {};
+  let total=0, done=0;
+  (MEALS[wd]||[]).forEach((m,i)=>{ total++; if(dayChecks["meal"+i]) done++; });
+  total++; if(dayChecks["train0"]) done++; // Training
+  total++; if(dayChecks["habit_protein"]) done++; // Eiweiß
+  total++; if((water[key]||0)>=8) done++; // Wasser
+  total++; if((steps[key]||0)>=8000) done++; // Schritte
+
+  const pct = total? Math.round(done/total*100):0;
+  const circ = 207;
+  document.getElementById("ringFill").style.strokeDashoffset = circ - (circ*pct/100);
+  document.getElementById("ringPct").textContent = pct+"%";
+  const big = document.getElementById("ringBig"), small=document.getElementById("ringSmall");
+  if(pct===0){ big.textContent="Los geht's!"; small.textContent="Hake deine Ziele für heute ab"; }
+  else if(pct<50){ big.textContent="Guter Start!"; small.textContent=done+" von "+total+" geschafft"; }
+  else if(pct<100){ big.textContent="Stark dabei! 💪"; small.textContent=done+" von "+total+" geschafft"; }
+  else { big.textContent="Perfekter Tag! 🎉"; small.textContent="Alle "+total+" Ziele erreicht"; }
+
+  // Kalorien-Ist (abgehakte Mahlzeiten + eigene Lebensmittel)
+  const kcalEl = document.getElementById("kcalToday");
+  if(kcalEl){
+    const target = 2100;
+    const pctK = Math.min(100, Math.round(act.kcal/target*100));
+    const over = act.kcal > target;
+    kcalEl.innerHTML = `
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+        <span style="font-weight:700">🍽️ Gegessen: ${act.kcal} kcal</span>
+        <span style="color:var(--muted)">Ziel ~${target} · Eiweiß ${act.prot} g</span>
+      </div>
+      <div class="goalbar"><div class="goalbar-fill" style="width:${pctK}%;${over?'background:var(--orange)':''}"></div></div>
+      <div class="muted-note" style="margin-top:6px">Zählt abgehakte Plan-Mahlzeiten + eigene Lebensmittel.</div>`;
+  }
+}
+
+/* ================= GEWICHT-TAB ================= */
+function addWeight(){
+  const inp = document.getElementById("weightInput");
+  const v = parseFloat(inp.value.replace(",","."));
+  if(!v || v<30 || v>300){ alert("Bitte ein gültiges Gewicht eingeben."); return; }
+  const key = dayKey(); // ausgewählter Tag (Kalender)
+  const existing = weights.findIndex(w=>w.date===key);
+  if(existing>=0) weights[existing].weight = v;
+  else weights.push({date:key, weight:v});
+  weights.sort((a,b)=>a.date.localeCompare(b.date));
+  save("ab_weights", weights);
+  renderGewicht();
+}
+function deleteWeight(date){
+  weights = weights.filter(w=>w.date!==date);
+  save("ab_weights", weights);
+  renderGewicht();
+}
+
+function renderGewicht(){
+  updateDateNav();
+  // Eingabe für den AUSGEWÄHLTEN Tag vorbefüllen (Anzeigen/Korrigieren)
+  const key = dayKey();
+  const entryForDay = weights.find(w=>w.date===key);
+  const inp = document.getElementById("weightInput");
+  if(inp) inp.value = entryForDay ? entryForDay.weight : "";
+  const btn = document.getElementById("weightSaveBtn");
+  if(btn) btn.textContent = entryForDay ? "Ändern" : "Speichern";
+  const hint = document.getElementById("weightDayHint");
+  if(hint) hint.textContent = entryForDay
+    ? "Eintrag für "+(isToday()?"heute":viewDate.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"2-digit"}))+": "+entryForDay.weight.toFixed(1)+" kg – ändern und speichern."
+    : (isToday()?"Tipp: Immer morgens, nüchtern, nach dem Toilettengang wiegen."
+                : "Du trägst das Gewicht für den "+viewDate.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"2-digit"})+" nach.");
+
+  const gs = GOAL_START(), ge = GOAL_END();
+  const current = weights.length ? weights[weights.length-1].weight : null;
+  document.getElementById("statCurrent").textContent = current ? current.toFixed(1)+" kg" : "–";
+  const lost = current ? Math.max(0, gs - current) : 0;
+  const left = current ? Math.max(0, current - ge) : (gs-ge);
+  document.getElementById("statLost").textContent = lost.toFixed(1)+" kg";
+  document.getElementById("statLeft").textContent = left.toFixed(1)+" kg";
+
+  // Labels an variables Ziel anpassen
+  const labels = document.querySelectorAll("#tab-gewicht .goalbar-labels span");
+  if(labels.length===3){ labels[0].textContent = gs+" kg"; labels[2].textContent = ge+" kg"; }
+  document.getElementById("hdrSub").textContent = "Ziel: "+gs+" kg → "+ge+" kg";
+
+  const totalToLose = (gs - ge) || 1;
+  let pct = current ? Math.min(100, Math.max(0, (gs-current)/totalToLose*100)) : 0;
+  document.getElementById("goalFill").style.width = pct+"%";
+  document.getElementById("goalPct").textContent = Math.round(pct)+"%";
+
+  // Liste
+  const list = document.getElementById("weightList");
+  if(!weights.length){ list.innerHTML='<div class="empty">Noch keine Einträge.</div>'; }
+  else {
+    list.innerHTML = [...weights].reverse().map((w,idx,arr)=>{
+      const prev = arr[idx+1];
+      let diff="";
+      if(prev){
+        const d = w.weight - prev.weight;
+        const cls = d<=0?"down":"up";
+        diff = `<span class="wdiff ${cls}">${d>0?"+":""}${d.toFixed(1)}</span>`;
+      }
+      const dlabel = new Date(w.date+"T00:00").toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"2-digit"});
+      return `<div class="wrow">
+        <span class="wdate" style="cursor:pointer" onclick="pickDate('${w.date}')">${dlabel} ✏️</span>
+        <span><span class="wval" style="cursor:pointer" onclick="pickDate('${w.date}')">${w.weight.toFixed(1)} kg</span>${diff}
+        <span class="del" onclick="deleteWeight('${w.date}')">✕</span></span>
+      </div>`;
+    }).join("");
+  }
+  renderChart();
+}
+
+function renderChart(){
+  document.getElementById("chartWrap").innerHTML = weightChartHTML();
+}
+
+function weightChartHTML(){
+  if(weights.length<2){
+    return '<div class="empty">Mind. 2 Einträge nötig, um den Verlauf zu zeigen.</div>';
+  }
+  const ge = GOAL_END(), gs = GOAL_START();
+  const W=320, H=180, padL=36, padR=12, padT=14, padB=24;
+  const vals = weights.map(w=>w.weight);
+  let min = Math.min(...vals, ge), max = Math.max(...vals, gs);
+  min = Math.floor(min-1); max = Math.ceil(max+1);
+  const range = max-min || 1;
+  const n = weights.length;
+  const x = i => padL + (W-padL-padR) * (n===1?0.5:i/(n-1));
+  const y = v => padT + (H-padT-padB) * (1-(v-min)/range);
+
+  // Gridlines + Achsenbeschriftung (4 Linien)
+  let grid="";
+  for(let g=0; g<=3; g++){
+    const val = min + range*g/3;
+    const yy = y(val);
+    grid += `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="#eef2f6" stroke-width="1"/>`;
+    grid += `<text x="${padL-6}" y="${yy+3}" text-anchor="end" font-size="9" fill="#94a3b8">${val.toFixed(0)}</text>`;
+  }
+  // Ziel-Linie
+  const yGoal = y(ge);
+  grid += `<line x1="${padL}" y1="${yGoal}" x2="${W-padR}" y2="${yGoal}" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+  grid += `<text x="${W-padR}" y="${yGoal-4}" text-anchor="end" font-size="9" fill="#16a34a" font-weight="700">Ziel ${ge}</text>`;
+
+  // Linie
+  const pts = weights.map((w,i)=>`${x(i)},${y(w.weight)}`).join(" ");
+  let dots = weights.map((w,i)=>`<circle cx="${x(i)}" cy="${y(w.weight)}" r="3" fill="#16a34a"/>`).join("");
+  // letzter Punkt hervorheben
+  const last = weights[n-1];
+  dots += `<circle cx="${x(n-1)}" cy="${y(last.weight)}" r="5" fill="#16a34a" stroke="#fff" stroke-width="2"/>`;
+
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">
+    ${grid}
+    <polyline points="${pts}" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}
+  </svg>`;
+}
+
+function saveSettings(){
+  const s = parseFloat(document.getElementById("startInput").value.replace(",","."));
+  const g = parseFloat(document.getElementById("goalInput").value.replace(",","."));
+  if(!s || !g || s<30 || g<30 || s>300 || g>300){ alert("Bitte gültige Werte eingeben."); return; }
+  if(g >= s){ alert("Das Zielgewicht muss kleiner als das Startgewicht sein."); return; }
+  settings = {start:s, goal:g};
+  save("ab_settings", settings);
+  renderGewicht();
+  alert("Ziel gespeichert: "+s+" kg → "+g+" kg 🎯");
+}
+function fillSettings(){
+  document.getElementById("startInput").value = settings.start;
+  document.getElementById("goalInput").value = settings.goal;
+}
+
+/* ================= ESSEN: IST-BERECHNUNG ================= */
+function parseMK(k){
+  const km = k.match(/(\d+)\s*kcal/);
+  const pm = k.match(/(\d+)\s*g Eiweiß/);
+  return { kcal: km?parseInt(km[1]):0, prot: pm?parseInt(pm[1]):0 };
+}
+// Tatsächlich gegessen an einem Datum = abgehakte Plan-Mahlzeiten + eigene Lebensmittel
+function actualForDate(dateKey){
+  const wd = new Date(dateKey+"T00:00").getDay();
+  const dc = checks[dateKey] || {};
+  let kcal=0, prot=0, items=[];
+  (MEALS[wd]||[]).forEach((m,i)=>{
+    if(dc["meal"+i]){ const mk=parseMK(m.k); kcal+=mk.kcal; prot+=mk.prot; items.push({name:m.n, kcal:mk.kcal, prot:mk.prot, plan:true}); }
+  });
+  (foodLog[dateKey]||[]).forEach(f=>{ kcal+=f.kcal; prot+=(f.prot||0); items.push({name:f.name, kcal:f.kcal, prot:f.prot||0, plan:false}); });
+  return {kcal, prot, items};
+}
+
+/* ================= ESSEN-TAB ================= */
+function renderMealPlan(){
+  updateDateNav();
+  const wd = viewDate.getDay();
+  const key = dayKey();
+  let tag = "";
+  if(dayPlan[wd]==="gym") tag=" 🏋️"; else if(dayPlan[wd]==="lauf") tag=" 🏃";
+  if(wd===0) tag+=" (Flex)";
+  document.getElementById("mealPlanTitle").textContent = (isToday()?"Heute – ":"") + WEEKDAYS[wd] + tag;
+  const meals = MEALS[wd]||[];
+  document.getElementById("mealPlanBody").innerHTML = meals.map(m=>
+    `<div class="meal-block"><div class="mname">${m.n}</div><div class="mdesc">${m.d}</div><div class="mkcal">${m.k}</div></div>`
+  ).join("");
+
+  // Plan-Tagessumme (Soll)
+  let kcal=0, prot=0, approx=false;
+  meals.forEach(m=>{
+    const mk = parseMK(m.k);
+    if(mk.kcal) kcal += mk.kcal; else approx = true;
+    prot += mk.prot;
+    if(/~|frei/.test(m.k)) approx = true;
+  });
+  const pre = approx ? "ca. " : "";
+  let html = `<div class="total-box">
+    <div class="total-row">
+      <span class="total-label">Plan-Tagessumme (Soll)</span>
+      <span><span class="total-val">${pre}${kcal}</span> <span class="total-target">/ ~2.100 kcal</span></span>
+    </div>
+    <div class="total-row">
+      <span class="total-label">davon Eiweiß (Soll)</span>
+      <span><span class="total-val">${pre}${prot} g</span> <span class="total-target">/ ~150–170 g</span></span>
+    </div>
+    ${approx ? '<div class="total-note">„ca.“ – an diesem Tag ist mindestens eine Mahlzeit flexibel/ohne feste Angabe.</div>' : ''}
+  </div>`;
+
+  // Ist: tatsächlich gegessen am AUSGEWÄHLTEN Tag (abgehakte Mahlzeiten + eigene Lebensmittel)
+  const act = actualForDate(key);
+  const istLabel = isToday() ? "Heute tatsächlich gegessen (Ist)"
+    : "Gegessen am " + viewDate.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"2-digit"}) + " (Ist)";
+  if(act.items.length>0){
+    html += `<div class="total-box" style="background:var(--blue-light);margin-top:10px">
+      <div class="total-row"><span class="total-label" style="color:var(--blue)">${istLabel}</span></div>
+      ${act.items.map(it=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0">
+        <span>${it.plan?'✓':'🍴'} ${it.name}</span>
+        <span style="white-space:nowrap">${it.kcal} kcal${it.prot?` · ${it.prot} g E`:''}</span></div>`).join("")}
+      <div class="total-row" style="margin-top:6px;border-top:1px solid rgba(37,99,235,0.2);padding-top:8px">
+        <span class="total-label" style="color:var(--blue)">Summe Ist</span>
+        <span class="total-val" style="color:var(--blue)">${act.kcal} kcal · ${act.prot} g E</span>
+      </div>
+    </div>`;
+  } else {
+    html += `<div class="total-note" style="margin-top:8px">
+      <b>Ist (${isToday()?"heute":"dieser Tag"}):</b> Für diesen Tag ist nichts abgehakt oder eingetragen.
+      Hake im „Heute“-Tab Mahlzeiten ab oder füge eigene Lebensmittel hinzu – dann erscheint hier die tatsächliche Tagessumme.
+    </div>`;
+  }
+  document.getElementById("mealPlanTotal").innerHTML = html;
+}
+
+/* ================= GYM-TAB ================= */
+function gymEntryFor(dateKey){ return gymHistory.find(s=>s.date===dateKey); }
+
+function renderGym(){
+  updateDateNav();
+  const key = dayKey();
+  const entry = gymEntryFor(key);
+  const weights = entry ? entry.weights : {};
+  document.getElementById("gymDayHint").textContent = isToday()
+    ? "Du trägst die Gewichte für heute ein."
+    : "Du bearbeitest das Workout vom " + viewDate.toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit",year:"2-digit"}) + ".";
+
+  document.getElementById("gymBody").innerHTML = GYM_EXERCISES.map(ex=>{
+    const w = weights[ex.id]!=null ? weights[ex.id] : "";
+    const isPlank = ex.id==="plank";
+    const last = lastGymValueBefore(ex.id, key);
+    const lastTxt = last!=null ? `zuletzt: ${last}${isPlank?' s':' kg'}` : "noch kein Eintrag";
+    return `<div class="ex-item">
+      <div class="ex-head"><span class="ex-name">${ex.n}</span><span class="ex-scheme">${ex.s}</span></div>
+      <div class="ex-weight">
+        <label>${isPlank?'Zeit:':'Gewicht:'}</label>
+        <input type="number" inputmode="decimal" step="${isPlank?'5':'0.5'}" value="${w}" placeholder="${isPlank?'Sek.':'kg'}"
+          onchange="saveGym('${ex.id}', this.value)">
+        <span style="font-size:12px;color:var(--muted)">${isPlank?'s':'kg'}</span>
+        <span style="font-size:11px;color:var(--muted);margin-left:auto">${lastTxt}</span>
+      </div>
+    </div>`;
+  }).join("");
+  renderWeekStructure();
+  renderGymProgress();
+  renderGymHistory();
+}
+
+function renderWeekStructure(){
+  const order=[1,2,3,4,5,6,0];
+  const names={1:"Montag",2:"Dienstag",3:"Mittwoch",4:"Donnerstag",5:"Freitag",6:"Samstag",0:"Sonntag"};
+  document.getElementById("weekStructure").innerHTML = order.map(d=>{
+    const cur = dayPlan[d]||"ruhe";
+    const btn=(type)=>`<button class="wp-btn ${cur===type?'active':''}" onclick="setDayPlan(${d},'${type}')">${TRAIN_TYPES[type].icon} ${TRAIN_TYPES[type].short}</button>`;
+    return `<div class="wstruct-row">
+      <span class="wstruct-day">${names[d]}</span>
+      <div class="wp-group">${btn('gym')}${btn('lauf')}${btn('ruhe')}</div>
+    </div>`;
+  }).join("");
+}
+function setDayPlan(d,type){
+  dayPlan[d]=type;
+  save("ab_dayplan", dayPlan);
+  renderWeekStructure();
+  renderHeute();
+  renderMealPlan();
+}
+// Speichert direkt für den AUSGEWÄHLTEN Tag (viewDate) in die Historie
+function saveGym(id, val){
+  const key = dayKey();
+  const v = parseFloat(val);
+  let entry = gymEntryFor(key);
+  if(!entry){ entry = {date:key, weights:{}}; gymHistory.push(entry); }
+  if(v>0) entry.weights[id]=v; else delete entry.weights[id];
+  // Leere Tage entfernen
+  if(Object.keys(entry.weights).length===0){ gymHistory = gymHistory.filter(s=>s.date!==key); }
+  gymHistory.sort((a,b)=>a.date.localeCompare(b.date));
+  save("ab_gym_history", gymHistory);
+  renderGymProgress();
+  renderGymHistory();
+}
+
+// Letzter Wert einer Übung VOR dem angegebenen Tag (für den „zuletzt“-Hinweis)
+function lastGymValueBefore(id, dateKey){
+  let val=null;
+  gymHistory.forEach(s=>{ if(s.date < dateKey && s.weights[id]!=null) val=s.weights[id]; });
+  return val;
+}
+
+function deleteWorkout(date){
+  if(!confirm("Dieses Workout löschen?")) return;
+  gymHistory = gymHistory.filter(s=>s.date!==date);
+  save("ab_gym_history", gymHistory);
+  renderGym();
+}
+
+function renderGymProgress(){
+  const wrap = document.getElementById("gymProgress");
+  if(gymHistory.length===0){
+    wrap.innerHTML = '<div class="empty">Noch keine Workouts erfasst. Trag oben deine Gewichte ein, um den Fortschritt zu sehen.</div>';
+    return;
+  }
+  wrap.innerHTML = GYM_EXERCISES.map(ex=>{
+    const isPlank = ex.id==="plank";
+    const unit = isPlank?' s':' kg';
+    // erster und letzter Wert dieser Übung
+    let first=null, last=null;
+    gymHistory.forEach(s=>{ if(s.weights[ex.id]!=null){ if(first==null) first=s.weights[ex.id]; last=s.weights[ex.id]; } });
+    if(last==null) return "";
+    const diff = first!=null ? last-first : 0;
+    let badge = "";
+    if(diff>0) badge = `<span class="wdiff down">+${diff}${unit}</span>`;
+    else if(diff<0) badge = `<span class="wdiff up">${diff}${unit}</span>`;
+    else badge = `<span class="wdiff" style="background:var(--bg);color:var(--muted)">Start</span>`;
+    return `<div class="wrow" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:14px">${ex.n}</span>
+      <span><span style="font-weight:700">${last}${unit}</span> ${badge}</span>
+    </div>`;
+  }).join("");
+}
+
+function renderGymHistory(){
+  const wrap = document.getElementById("gymHistory");
+  if(gymHistory.length===0){ wrap.innerHTML='<div class="empty">Noch keine Workouts absolviert.</div>'; return; }
+  wrap.innerHTML = [...gymHistory].reverse().map(s=>{
+    const dlabel = new Date(s.date+"T00:00").toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit",year:"2-digit"});
+    const details = GYM_EXERCISES.filter(ex=>s.weights[ex.id]!=null)
+      .map(ex=>`${ex.n.split(' ')[0]} ${s.weights[ex.id]}${ex.id==='plank'?'s':'kg'}`).join(" · ");
+    return `<div class="meal-block">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:700;cursor:pointer" onclick="pickDate('${s.date}')">${dlabel} ✏️</span>
+        <span class="del" onclick="deleteWorkout('${s.date}')">✕</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5;cursor:pointer" onclick="pickDate('${s.date}')">${details}</div>
+    </div>`;
+  }).join("");
+}
+
+/* ================= DASHBOARD ================= */
+function lastNDates(n){
+  const arr=[]; const d=new Date();
+  for(let i=0;i<n;i++){ arr.push(fmtDate(d)); d.setDate(d.getDate()-1); }
+  return arr;
+}
+function weightOnOrBefore(dateKey){
+  let val=null;
+  weights.forEach(w=>{ if(w.date<=dateKey) val=w.weight; });
+  return val;
+}
+function dayActive(k){
+  return (checks[k] && Object.keys(checks[k]).length>0) ||
+         (foodLog[k] && foodLog[k].length>0) ||
+         !!gymEntryFor(k) || !!steps[k] || !!water[k] ||
+         weights.some(w=>w.date===k);
+}
+function currentStreak(){
+  const d=new Date();
+  if(!dayActive(fmtDate(d))) d.setDate(d.getDate()-1); // gestern als Start erlauben
+  let streak=0;
+  while(dayActive(fmtDate(d))){ streak++; d.setDate(d.getDate()-1); }
+  return streak;
+}
+
+function renderDashboard(){
+  const gs=GOAL_START(), ge=GOAL_END();
+  const current = weights.length ? weights[weights.length-1].weight : null;
+  const lost = current!=null ? gs-current : 0;
+  const left = current!=null ? Math.max(0, current-ge) : (gs-ge);
+  const pct = current!=null ? Math.min(100, Math.max(0,(gs-current)/((gs-ge)||1)*100)) : 0;
+
+  // Δ diese Woche
+  const wk7 = lastNDates(8)[7];
+  const past = weightOnOrBefore(wk7);
+  const weeklyChange = (current!=null && past!=null) ? current-past : null;
+
+  // Ø pro Woche + Prognose (aus erstem & letztem Eintrag)
+  let avgWeek=null, projection="–";
+  if(weights.length>=2){
+    const first=weights[0], lastW=weights[weights.length-1];
+    const days=(new Date(lastW.date)-new Date(first.date))/86400000 || 1;
+    const ratePerDay=(first.weight-lastW.weight)/days; // positiv = Abnahme
+    avgWeek = (lastW.weight-first.weight)/(days/7); // negativ = Abnahme
+    if(current!=null && current<=ge){ projection="Ziel erreicht! 🎉"; }
+    else if(ratePerDay>0 && current!=null){
+      const daysLeft=(current-ge)/ratePerDay;
+      const t=new Date(); t.setDate(t.getDate()+Math.round(daysLeft));
+      projection=t.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});
+    }
+  }
+
+  // Wochenwerte (letzte 7 Tage)
+  let kcalSum=0,protSum=0,daysFood=0, stepsSum=0,daysSteps=0, waterSum=0,daysWater=0;
+  lastNDates(7).forEach(k=>{
+    const a=actualForDate(k);
+    if(a.kcal>0){ kcalSum+=a.kcal; protSum+=a.prot; daysFood++; }
+    if(steps[k]){ stepsSum+=steps[k]; daysSteps++; }
+    if(water[k]){ waterSum+=water[k]; daysWater++; }
+  });
+  const last7 = lastNDates(7);
+  const krafttraining = gymHistory.filter(s=>last7.includes(s.date)).length;
+  const laeufe = last7.filter(k=>{
+    const wd=new Date(k+"T00:00").getDay();
+    return dayPlan[wd]==="lauf" && checks[k] && checks[k].train0;
+  }).length;
+  const avgKcal = daysFood? Math.round(kcalSum/daysFood) : null;
+  const avgProt = daysFood? Math.round(protSum/daysFood) : null;
+  const avgSteps = daysSteps? Math.round(stepsSum/daysSteps) : null;
+  const avgWater = daysWater? (waterSum/daysWater).toFixed(1) : null;
+
+  // Konsistenz – nur Tage mit echtem Inhalt zählen
+  const allDates = new Set();
+  Object.keys(checks).forEach(k=>{ if(checks[k] && Object.keys(checks[k]).length>0) allDates.add(k); });
+  Object.keys(foodLog).forEach(k=>{ if(foodLog[k] && foodLog[k].length>0) allDates.add(k); });
+  Object.keys(steps).forEach(k=>{ if(steps[k]) allDates.add(k); });
+  Object.keys(water).forEach(k=>{ if(water[k]) allDates.add(k); });
+  gymHistory.forEach(s=>{ if(s.weights && Object.keys(s.weights).length>0) allDates.add(s.date); });
+  weights.forEach(w=>allDates.add(w.date));
+  let protDays=0;
+  allDates.forEach(k=>{ if(actualForDate(k).prot>=PROTEIN_TARGET) protDays++; });
+  const streak = currentStreak();
+
+  const chg = (v,unit,goodIfNeg=true)=>{
+    if(v==null) return '<span class="total-target">–</span>';
+    const cls = (goodIfNeg ? v<=0 : v>=0) ? "down" : "up";
+    return `<span class="wdiff ${cls}">${v>0?"+":""}${v.toFixed(1)}${unit}</span>`;
+  };
+
+  document.getElementById("dashboardBody").innerHTML = `
+    <div class="card">
+      <h2>⚖️ Gewicht</h2>
+      <div style="text-align:center;margin:4px 0 14px">
+        <div style="font-size:38px;font-weight:800;line-height:1">${current!=null?current.toFixed(1):"–"}<span style="font-size:18px;color:var(--muted)"> kg</span></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">aktuell · Ziel ${ge} kg</div>
+      </div>
+      <div class="goalbar-wrap">
+        <div class="goalbar-labels"><span>${gs} kg</span><span>${Math.round(pct)}%</span><span>${ge} kg</span></div>
+        <div class="goalbar"><div class="goalbar-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="stat-grid" style="margin-top:12px">
+        <div class="stat"><div class="num">${lost>0?lost.toFixed(1):"0"}</div><div class="lbl">kg abgenommen</div></div>
+        <div class="stat"><div class="num">${left.toFixed(1)}</div><div class="lbl">kg bis Ziel</div></div>
+        <div class="stat"><div class="num" style="font-size:15px">${chg(weeklyChange," kg")}</div><div class="lbl">diese Woche</div></div>
+      </div>
+      ${weightChartHTML()}
+    </div>
+
+    <div class="card">
+      <h2>🔮 Prognose</h2>
+      <div class="stat-grid">
+        <div class="stat"><div class="num" style="font-size:15px">${avgWeek!=null?chg(avgWeek," kg"):"–"}</div><div class="lbl">Ø pro Woche</div></div>
+        <div class="stat" style="grid-column:span 2"><div class="num" style="font-size:16px">${projection}</div><div class="lbl">Ziel voraussichtlich erreicht</div></div>
+      </div>
+      ${avgWeek!=null && avgWeek>=0 ? '<div class="muted-note">Aktuell keine Abnahme im Trend – Prognose nicht berechenbar. Dranbleiben! 💪</div>' : ''}
+    </div>
+
+    <div class="card">
+      <h2>📅 Diese Woche (7 Tage)</h2>
+      <div class="stat-grid">
+        <div class="stat"><div class="num">${krafttraining}</div><div class="lbl">Krafttraining</div></div>
+        <div class="stat"><div class="num">${laeufe}</div><div class="lbl">Läufe</div></div>
+        <div class="stat"><div class="num">${avgKcal!=null?avgKcal:"–"}</div><div class="lbl">Ø kcal/Tag</div></div>
+        <div class="stat"><div class="num">${avgProt!=null?avgProt+"g":"–"}</div><div class="lbl">Ø Eiweiß/Tag</div></div>
+        <div class="stat"><div class="num">${avgSteps!=null?avgSteps.toLocaleString("de-DE"):"–"}</div><div class="lbl">Ø Schritte</div></div>
+        <div class="stat"><div class="num">${avgWater!=null?avgWater:"–"}</div><div class="lbl">Ø Gläser Wasser</div></div>
+      </div>
+      <div class="muted-note">Durchschnitte zählen nur Tage mit erfassten Daten.</div>
+    </div>
+
+    <div class="card">
+      <h2>🔥 Konsistenz</h2>
+      <div class="stat-grid">
+        <div class="stat"><div class="num">${streak}</div><div class="lbl">Tage-Streak</div></div>
+        <div class="stat"><div class="num">${allDates.size}</div><div class="lbl">Tage getrackt</div></div>
+        <div class="stat"><div class="num">${protDays}</div><div class="lbl">Eiweißziel erreicht</div></div>
+      </div>
+    </div>
+  `;
+}
+
+/* ================= BACKUP / RESTORE ================= */
+const STORE_KEYS = ["ab_checks","ab_water","ab_steps","ab_weights","ab_gym","ab_gym_history","ab_settings","ab_dayplan","ab_foodlog"];
+
+function exportData(){
+  // Sichert ALLE Daten: jeder localStorage-Schlüssel enthält sämtliche Tage/Bereiche
+  const dump = {};
+  STORE_KEYS.forEach(k=>{ const v=localStorage.getItem(k); if(v!=null) dump[k]=JSON.parse(v); });
+  dump._exported = new Date().toISOString();
+  dump._version = 1;
+
+  const blob = new Blob([JSON.stringify(dump,null,2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "abnehm-backup-"+fmtDate(new Date())+".json";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  // Übersicht: was wurde gesichert?
+  const summary =
+    "✅ Komplett-Backup erstellt (alle Tage & Bereiche):\n\n"+
+    "• Tage mit Häkchen: "+Object.keys(checks).length+"\n"+
+    "• Gewichtseinträge: "+weights.length+"\n"+
+    "• Tage mit eigenen Lebensmitteln: "+Object.keys(foodLog).length+"\n"+
+    "• Tage mit Wasser-/Schritte-Daten: "+Object.keys(water).length+" / "+Object.keys(steps).length+"\n"+
+    "• Absolvierte Workouts: "+gymHistory.length+"\n"+
+    "• Ziel & Wochenplan: gesichert\n\n"+
+    "Dateigröße: "+(blob.size/1024).toFixed(1)+" KB";
+  alert(summary);
+}
+
+function importData(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if(!confirm("Backup wiederherstellen? Deine aktuellen Daten werden ersetzt.")){ input.value=""; return; }
+      STORE_KEYS.forEach(k=>{ if(data[k]!=null) localStorage.setItem(k, JSON.stringify(data[k])); });
+      // neu laden
+      checks=load("ab_checks",{}); water=load("ab_water",{}); steps=load("ab_steps",{});
+      weights=load("ab_weights",[]); gymWeights=load("ab_gym",{});
+      gymHistory=load("ab_gym_history",[]); settings=load("ab_settings",{start:112,goal:105});
+      dayPlan=load("ab_dayplan",{0:"ruhe",1:"ruhe",2:"gym",3:"ruhe",4:"gym",5:"ruhe",6:"lauf"});
+      foodLog=load("ab_foodlog",{});
+      fillSettings(); renderHeute(); renderGewicht(); renderMealPlan(); renderGym(); renderDashboard();
+      alert("Backup erfolgreich wiederhergestellt! ✅");
+    } catch(err){ alert("Datei konnte nicht gelesen werden."); }
+    input.value="";
+  };
+  reader.readAsText(file);
+}
+
+/* ================= INIT ================= */
+// Alt-Daten bereinigen: leere Tages-Einträge entfernen (verfälschten die Statistik)
+(function cleanup(){
+  let changed=false;
+  Object.keys(checks).forEach(k=>{ if(!checks[k] || Object.keys(checks[k]).length===0){ delete checks[k]; changed=true; } });
+  Object.keys(foodLog).forEach(k=>{ if(!foodLog[k] || foodLog[k].length===0){ delete foodLog[k]; changed=true; } });
+  if(changed){ save("ab_checks", checks); save("ab_foodlog", foodLog); }
+})();
+
+// Browser bitten, den Speicher dauerhaft zu behalten (verhindert automatisches Löschen)
+if(navigator.storage && navigator.storage.persist){ navigator.storage.persist(); }
+
+fillSettings();
+renderHeute();
+renderGewicht();
+renderMealPlan();
+renderGym();
+renderDashboard();
+</script>
+</body>
+</html>

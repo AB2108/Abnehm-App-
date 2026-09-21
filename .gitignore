@@ -1,0 +1,9 @@
+# Claude Code interne Dateien
+.claude/
+
+# System
+Thumbs.db
+.DS_Store
+
+# Backups der App (lokale Nutzerdaten)
+abnehm-backup-*.json

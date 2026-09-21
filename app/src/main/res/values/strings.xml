@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Abnehm-Plan</string>
+    <string name="backup_saved">Backup gespeichert: %1$s (Ordner \"Download\")</string>
+    <string name="backup_failed">Backup konnte nicht gespeichert werden.</string>
+    <string name="backup_permission_denied">Ohne Speicher-Berechtigung kann kein Backup gespeichert werden.</string>
+</resources>

@@ -7,3 +7,19 @@ Thumbs.db
 
 # Backups der App (lokale Nutzerdaten)
 abnehm-backup-*.json
+
+# Android / Gradle
+*.iml
+.gradle/
+/local.properties
+.idea/
+build/
+app/build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.keystore
+# Gradle-Wrapper-JAR bewusst NICHT ignorieren (wird für den Build benötigt)
+!gradle/wrapper/gradle-wrapper.jar

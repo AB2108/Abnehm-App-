@@ -4,6 +4,8 @@ Eine persönliche Abnehm- & Fitness-Tracking-App als **einzelne HTML-Datei**. L�
 
 > **Wichtig:** Die gesamte App steckt in der Datei [`abnehm-app.html`](abnehm-app.html). Es gibt keinen Build-Schritt und keine Abhängigkeiten. „Neu aufbauen" = diese eine Datei ins Repo legen und öffnen.
 
+> **Als installierbare Android-App:** Zusätzlich gibt es jetzt ein natives Android-Projekt (`app/`), das exakt diese HTML-Datei in einer nativen Hülle (WebView) anzeigt – gleiches Aussehen, gleiche Funktion, als richtige App mit Icon. Siehe Abschnitt **[📦 Native Android-App](#-native-android-app)**.
+
 ---
 
 ## 🎯 Ziel des Projekts
@@ -101,6 +103,43 @@ Datumsbasiert. Ganzkörper-Workout (7 Übungen), Gewichte **pro Tag** eintragen 
 - **Andere Mahlzeiten/Gramm-Angaben:** `const MEALS = { ... }` in `abnehm-app.html` bearbeiten (Format: `{n:"Frühstück", d:"250 g Magerquark ...", k:"380 kcal · 35 g Eiweiß"}`). Kalorien-/Eiweiß-Summen werden automatisch aus dem `k`-Text geparst.
 - **Andere Übungen:** `const GYM_EXERCISES = [ ... ]`.
 - **Kalorien-/Eiweiß-Ziel:** Werte `2100` bzw. `PROTEIN_TARGET = 150` im Skript.
+
+---
+
+## 📦 Native Android-App
+
+Neben der reinen HTML-Version gibt es ein natives Android-Projekt, das **dieselbe** `abnehm-app.html` unverändert in einer WebView-Hülle anzeigt. Ergebnis: eine echte, installierbare Android-App (eigenes Icon, Vollbild, offline), die 1:1 wie die Web-Version aussieht und funktioniert. Die HTML-Datei liegt dazu gespiegelt unter `app/src/main/assets/abnehm-app.html`.
+
+### Aufbau des Android-Projekts
+
+| Pfad | Inhalt |
+|---|---|
+| `app/src/main/assets/abnehm-app.html` | Die App selbst (Kopie der Root-Datei) |
+| `app/src/main/java/de/abnehm/app/MainActivity.kt` | WebView-Hülle: lädt die HTML-Datei, aktiviert localStorage, überbrückt Backup-Export/-Import |
+| `app/src/main/AndroidManifest.xml` | App-Manifest |
+| `app/src/main/res/` | Icon (Waage auf Grün), Farben, Theme, Strings |
+| `build.gradle.kts`, `app/build.gradle.kts`, `settings.gradle.kts` | Gradle-Build (Kotlin DSL) |
+| `.github/workflows/android-build.yml` | Baut bei jedem Push automatisch eine APK |
+
+Technik: `minSdk 24` (Android 7.0+), `targetSdk 34`, Kotlin, WebView. Der Backup-Export der App (JSON) wird nativ in den **Download-Ordner** geschrieben, der Import öffnet die native Datei-Auswahl.
+
+### APK ohne eigenen PC bekommen (empfohlen)
+
+1. Diesen Branch/das Repo auf GitHub pushen.
+2. Tab **Actions** → Workflow **„Android Build"** öffnen → letzten Lauf anklicken.
+3. Unten unter **Artifacts** die Datei **`abnehm-app-debug-apk`** herunterladen (ZIP mit der `.apk`).
+4. Die `.apk` aufs Handy kopieren und installieren. Dafür muss auf dem Handy **„Installation aus unbekannten Quellen"** für die jeweilige App (Dateimanager/Browser) erlaubt sein.
+
+> Dies ist ein **Debug**-APK (zum Testen/Selbstinstallieren, nicht für den Play Store). Für eine Play-Store-Veröffentlichung wäre ein signiertes Release-APK/AAB nötig – sag Bescheid, wenn du das brauchst.
+
+### Selbst bauen (mit Android Studio)
+
+1. Repo klonen, in **Android Studio** öffnen (Android SDK 34 wird beim ersten Öffnen automatisch geladen).
+2. Grünes **Run ▶** starten (Emulator oder angeschlossenes Handy) – oder per Terminal:
+   ```bash
+   ./gradlew assembleDebug
+   ```
+   Die fertige APK liegt danach unter `app/build/outputs/apk/debug/app-debug.apk`.
 
 ---
 

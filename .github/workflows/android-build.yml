@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -32,9 +32,27 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
 
+      - name: Rename APK
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/app-debug.apk dist/abnehm-app.apk
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: abnehm-app-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: dist/abnehm-app.apk
           if-no-files-found: error
+
+      - name: Publish APK to GitHub Release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-latest
+          name: Abnehm-App – Android (neuester Build)
+          body: |
+            Automatisch gebaute **Debug-APK** der Abnehm-App.
+
+            **Installation:** `abnehm-app.apk` unten herunterladen, auf dem Handy
+            antippen und (einmalig) Installation aus unbekannten Quellen erlauben.
+          files: dist/abnehm-app.apk

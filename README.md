@@ -50,17 +50,17 @@ Aggregierte Statistiken über alle Daten:
 
 ### 2. ✅ Heute
 Datumsbasiert (Kalender + Pfeile, keine Zukunft). Für den gewählten Tag:
-- **Fortschrittsring** (% der Tagesziele) + **Kalorien-Ist-Balken** (abgehakte Mahlzeiten + eigene Lebensmittel).
-- **Ernährung (Plan):** tagesabhängige Mahlzeiten-Checkliste.
-- **Eigene Lebensmittel:** Name + kcal + (optional) Eiweiß hinzufügen; Einträge **bearbeiten** (✏️) oder löschen.
-- **Training & Bewegung:** aus dem Wochenplan; Eiweiß-Haken **automatisch** (setzt/entfernt sich bei ≥/< 150 g).
+- **Fortschrittsring** (% der Tagesziele) + **Kalorien-Balken** (zählt nur die selbst eingetragenen Lebensmittel, mit „Noch X kcal bis Ziel“).
+- **Ernährung:** Lebensmittel selbst eintragen (Name + kcal + optional Eiweiß), Einträge **bearbeiten** (✏️) oder löschen; **„Zuletzt gegessen“-Schnellauswahl** zum Hinzufügen per Tipp. (Kein fester Essensplan mehr.)
+- **Training & Bewegung:** aus dem Wochenplan; Eiweiß-Haken **automatisch** (setzt/entfernt sich beim Erreichen des Eiweiß-Ziels).
 - **Wasser** (8 Gläser) und **Schritte** (Ziel 8.000).
+- Der Ring zählt 5 Tagesziele: Training, Eiweiß-Ziel, Wasser, Schritte und **Kalorien im Ziel** (etwas eingetragen und nicht über dem kcal-Ziel).
 
 ### 3. ⚖️ Gewicht
 Datumsbasiert (Kalender). Gewicht pro Tag eintragen/**ändern** (vorbefüllt bei vorhandenem Eintrag), Ziel anpassen (Start-/Zielgewicht variabel), Fortschritt, Verlaufsdiagramm mit Ziellinie, Einträge-Liste (anklickbar zum Bearbeiten, löschbar).
 
-### 4. 🍽️ Essen
-Datumsbasiert. Zeigt für den gewählten Tag den **Plan (Soll)** mit exakten Gramm-Angaben je Zutat + **Plan-Tagessumme** (kcal/Eiweiß) und die **Ist-Summe** (tatsächlich abgehakt + eigene Lebensmittel).
+### 4. 🍽️ Essen (Tagesübersicht)
+Datumsbasiert. Zeigt die am gewählten Tag **eingetragenen Lebensmittel**, die **Tagessumme** (kcal/Eiweiß) im Verhältnis zum Ziel und einen **7-Tage-Schnitt**. Hier lassen sich außerdem **Kalorien- und Eiweiß-Ziel** anpassen (Standard 2.100 kcal / 150 g).
 
 ### 5. 🏋️ Gym
 Datumsbasiert. Ganzkörper-Workout (7 Übungen), Gewichte **pro Tag** eintragen (automatisch gespeichert), „zuletzt"-Hinweis für Progression, Fortschritt je Übung, Workout-Historie (anklickbar), **anpassbare Wochenstruktur** (pro Tag Gym/Laufen/Ruhe).
@@ -76,13 +76,15 @@ Datumsbasiert. Ganzkörper-Workout (7 Übungen), Gewichte **pro Tag** eintragen 
 ### localStorage-Schlüssel (Datenmodell)
 | Schlüssel | Inhalt |
 |---|---|
-| `ab_checks` | `{ "YYYY-MM-DD": { meal0:true, train0:true, habit_protein:true } }` |
+| `ab_checks` | `{ "YYYY-MM-DD": { train0:true, habit_protein:true } }` |
 | `ab_water` | `{ "YYYY-MM-DD": AnzahlGläser }` |
 | `ab_steps` | `{ "YYYY-MM-DD": Schritte }` |
 | `ab_weights` | `[ { date:"YYYY-MM-DD", weight:111.5 } ]` |
 | `ab_gym_history` | `[ { date:"YYYY-MM-DD", weights:{ beinpresse:80, ... } } ]` |
 | `ab_foodlog` | `{ "YYYY-MM-DD": [ { name, kcal, prot } ] }` |
-| `ab_settings` | `{ start:112, goal:105 }` |
+| `ab_settings` | `{ start:112, goal:105, kcalTarget:2100, protTarget:150 }` |
+| `ab_foodlog` (s. o.) | einzige Quelle für kcal/Eiweiß-Ist (kein Plan mehr) |
+| `ab_recentfoods` | `[ { name, kcal, prot } ]` – zuletzt eingetragene Lebensmittel (max. 8) für die Schnellauswahl |
 | `ab_dayplan` | `{ 0:"ruhe",1:"ruhe",2:"gym",3:"ruhe",4:"gym",5:"ruhe",6:"lauf" }` (0=So…6=Sa) |
 | `ab_gym` | (veraltet, nur Abwärtskompatibilität) |
 
@@ -94,15 +96,14 @@ Datumsbasiert. Ganzkörper-Workout (7 Übungen), Gewichte **pro Tag** eintragen 
 - **Kern-Render-Funktionen:** `renderDashboard`, `renderHeute`, `renderGewicht`, `renderMealPlan`, `renderGym` — jeweils vom global gewählten Tag `viewDate` gesteuert.
 - **Diagramm:** inline-SVG (`weightChartHTML`), ohne Chart-Library.
 - **Datumsnavigation:** gemeinsamer `viewDate`, synchronisiert über `updateDateNav()`; native `<input type="date">` als Kalender.
-- **Mahlzeiten/Übungen** sind als JS-Objekte oben in der Datei definiert (`MEALS`, `GYM_EXERCISES`) — dort anpassbar.
+- **Übungen** sind als JS-Objekt oben in der Datei definiert (`GYM_EXERCISES`) — dort anpassbar. Einen festen Essensplan (`MEALS`) gibt es nicht mehr; Lebensmittel werden selbst eingetragen.
 
 ---
 
 ## 🔧 Anpassen
 
-- **Andere Mahlzeiten/Gramm-Angaben:** `const MEALS = { ... }` in `abnehm-app.html` bearbeiten (Format: `{n:"Frühstück", d:"250 g Magerquark ...", k:"380 kcal · 35 g Eiweiß"}`). Kalorien-/Eiweiß-Summen werden automatisch aus dem `k`-Text geparst.
-- **Andere Übungen:** `const GYM_EXERCISES = [ ... ]`.
-- **Kalorien-/Eiweiß-Ziel:** Werte `2100` bzw. `PROTEIN_TARGET = 150` im Skript.
+- **Andere Übungen:** `const GYM_EXERCISES = [ ... ]` in `abnehm-app.html`.
+- **Kalorien-/Eiweiß-Ziel:** direkt in der App im **Essen-Tab** unter „🎯 Ernährungsziele“ (gespeichert in `ab_settings`). Standard: 2.100 kcal / 150 g.
 
 ---
 

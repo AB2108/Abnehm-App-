@@ -1,0 +1,58 @@
+name: Android Build
+
+on:
+  push:
+    branches: ["main", "claude/**"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Rename APK
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/app-debug.apk dist/abnehm-app.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: abnehm-app-debug-apk
+          path: dist/abnehm-app.apk
+          if-no-files-found: error
+
+      - name: Publish APK to GitHub Release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-latest
+          name: Abnehm-App – Android (neuester Build)
+          body: |
+            Automatisch gebaute **Debug-APK** der Abnehm-App.
+
+            **Installation:** `abnehm-app.apk` unten herunterladen, auf dem Handy
+            antippen und (einmalig) Installation aus unbekannten Quellen erlauben.
+          files: dist/abnehm-app.apk

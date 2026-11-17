@@ -4,6 +4,8 @@ Eine persönliche Abnehm- & Fitness-Tracking-App als **einzelne HTML-Datei**. L�
 
 > **Wichtig:** Die gesamte App steckt in der Datei [`abnehm-app.html`](abnehm-app.html). Es gibt keinen Build-Schritt und keine Abhängigkeiten. „Neu aufbauen" = diese eine Datei ins Repo legen und öffnen.
 
+> **Als installierbare Android-App:** Zusätzlich gibt es jetzt ein natives Android-Projekt (`app/`), das exakt diese HTML-Datei in einer nativen Hülle (WebView) anzeigt – gleiches Aussehen, gleiche Funktion, als richtige App mit Icon. Siehe Abschnitt **[📦 Native Android-App](#-native-android-app)**.
+
 ---
 
 ## 🎯 Ziel des Projekts
@@ -48,17 +50,17 @@ Aggregierte Statistiken über alle Daten:
 
 ### 2. ✅ Heute
 Datumsbasiert (Kalender + Pfeile, keine Zukunft). Für den gewählten Tag:
-- **Fortschrittsring** (% der Tagesziele) + **Kalorien-Ist-Balken** (abgehakte Mahlzeiten + eigene Lebensmittel).
-- **Ernährung (Plan):** tagesabhängige Mahlzeiten-Checkliste.
-- **Eigene Lebensmittel:** Name + kcal + (optional) Eiweiß hinzufügen; Einträge **bearbeiten** (✏️) oder löschen.
-- **Training & Bewegung:** aus dem Wochenplan; Eiweiß-Haken **automatisch** (setzt/entfernt sich bei ≥/< 150 g).
+- **Fortschrittsring** (% der Tagesziele) + **Kalorien-Balken** (zählt nur die selbst eingetragenen Lebensmittel, mit „Noch X kcal bis Ziel“).
+- **Ernährung:** Lebensmittel selbst eintragen (Name + kcal + optional Eiweiß), Einträge **bearbeiten** (✏️) oder löschen; **„Zuletzt gegessen“-Schnellauswahl** zum Hinzufügen per Tipp. (Kein fester Essensplan mehr.)
+- **Training & Bewegung:** aus dem Wochenplan; Eiweiß-Haken **automatisch** (setzt/entfernt sich beim Erreichen des Eiweiß-Ziels).
 - **Wasser** (8 Gläser) und **Schritte** (Ziel 8.000).
+- Der Ring zählt 5 Tagesziele: Training, Eiweiß-Ziel, Wasser, Schritte und **Kalorien im Ziel** (etwas eingetragen und nicht über dem kcal-Ziel).
 
 ### 3. ⚖️ Gewicht
 Datumsbasiert (Kalender). Gewicht pro Tag eintragen/**ändern** (vorbefüllt bei vorhandenem Eintrag), Ziel anpassen (Start-/Zielgewicht variabel), Fortschritt, Verlaufsdiagramm mit Ziellinie, Einträge-Liste (anklickbar zum Bearbeiten, löschbar).
 
-### 4. 🍽️ Essen
-Datumsbasiert. Zeigt für den gewählten Tag den **Plan (Soll)** mit exakten Gramm-Angaben je Zutat + **Plan-Tagessumme** (kcal/Eiweiß) und die **Ist-Summe** (tatsächlich abgehakt + eigene Lebensmittel).
+### 4. 🍽️ Essen (Tagesübersicht)
+Datumsbasiert. Zeigt die am gewählten Tag **eingetragenen Lebensmittel**, die **Tagessumme** (kcal/Eiweiß) im Verhältnis zum Ziel und einen **7-Tage-Schnitt**. Hier lassen sich außerdem **Kalorien- und Eiweiß-Ziel** anpassen (Standard 2.100 kcal / 150 g).
 
 ### 5. 🏋️ Gym
 Datumsbasiert. Ganzkörper-Workout (7 Übungen), Gewichte **pro Tag** eintragen (automatisch gespeichert), „zuletzt"-Hinweis für Progression, Fortschritt je Übung, Workout-Historie (anklickbar), **anpassbare Wochenstruktur** (pro Tag Gym/Laufen/Ruhe).
@@ -74,13 +76,15 @@ Datumsbasiert. Ganzkörper-Workout (7 Übungen), Gewichte **pro Tag** eintragen 
 ### localStorage-Schlüssel (Datenmodell)
 | Schlüssel | Inhalt |
 |---|---|
-| `ab_checks` | `{ "YYYY-MM-DD": { meal0:true, train0:true, habit_protein:true } }` |
+| `ab_checks` | `{ "YYYY-MM-DD": { train0:true, habit_protein:true } }` |
 | `ab_water` | `{ "YYYY-MM-DD": AnzahlGläser }` |
 | `ab_steps` | `{ "YYYY-MM-DD": Schritte }` |
 | `ab_weights` | `[ { date:"YYYY-MM-DD", weight:111.5 } ]` |
 | `ab_gym_history` | `[ { date:"YYYY-MM-DD", weights:{ beinpresse:80, ... } } ]` |
 | `ab_foodlog` | `{ "YYYY-MM-DD": [ { name, kcal, prot } ] }` |
-| `ab_settings` | `{ start:112, goal:105 }` |
+| `ab_settings` | `{ start:112, goal:105, kcalTarget:2100, protTarget:150 }` |
+| `ab_foodlog` (s. o.) | einzige Quelle für kcal/Eiweiß-Ist (kein Plan mehr) |
+| `ab_recentfoods` | `[ { name, kcal, prot } ]` – zuletzt eingetragene Lebensmittel (max. 8) für die Schnellauswahl |
 | `ab_dayplan` | `{ 0:"ruhe",1:"ruhe",2:"gym",3:"ruhe",4:"gym",5:"ruhe",6:"lauf" }` (0=So…6=Sa) |
 | `ab_gym` | (veraltet, nur Abwärtskompatibilität) |
 
@@ -92,15 +96,51 @@ Datumsbasiert. Ganzkörper-Workout (7 Übungen), Gewichte **pro Tag** eintragen 
 - **Kern-Render-Funktionen:** `renderDashboard`, `renderHeute`, `renderGewicht`, `renderMealPlan`, `renderGym` — jeweils vom global gewählten Tag `viewDate` gesteuert.
 - **Diagramm:** inline-SVG (`weightChartHTML`), ohne Chart-Library.
 - **Datumsnavigation:** gemeinsamer `viewDate`, synchronisiert über `updateDateNav()`; native `<input type="date">` als Kalender.
-- **Mahlzeiten/Übungen** sind als JS-Objekte oben in der Datei definiert (`MEALS`, `GYM_EXERCISES`) — dort anpassbar.
+- **Übungen** sind als JS-Objekt oben in der Datei definiert (`GYM_EXERCISES`) — dort anpassbar. Einen festen Essensplan (`MEALS`) gibt es nicht mehr; Lebensmittel werden selbst eingetragen.
 
 ---
 
 ## 🔧 Anpassen
 
-- **Andere Mahlzeiten/Gramm-Angaben:** `const MEALS = { ... }` in `abnehm-app.html` bearbeiten (Format: `{n:"Frühstück", d:"250 g Magerquark ...", k:"380 kcal · 35 g Eiweiß"}`). Kalorien-/Eiweiß-Summen werden automatisch aus dem `k`-Text geparst.
-- **Andere Übungen:** `const GYM_EXERCISES = [ ... ]`.
-- **Kalorien-/Eiweiß-Ziel:** Werte `2100` bzw. `PROTEIN_TARGET = 150` im Skript.
+- **Andere Übungen:** `const GYM_EXERCISES = [ ... ]` in `abnehm-app.html`.
+- **Kalorien-/Eiweiß-Ziel:** direkt in der App im **Essen-Tab** unter „🎯 Ernährungsziele“ (gespeichert in `ab_settings`). Standard: 2.100 kcal / 150 g.
+
+---
+
+## 📦 Native Android-App
+
+Neben der reinen HTML-Version gibt es ein natives Android-Projekt, das **dieselbe** `abnehm-app.html` unverändert in einer WebView-Hülle anzeigt. Ergebnis: eine echte, installierbare Android-App (eigenes Icon, Vollbild, offline), die 1:1 wie die Web-Version aussieht und funktioniert. Die HTML-Datei liegt dazu gespiegelt unter `app/src/main/assets/abnehm-app.html`.
+
+### Aufbau des Android-Projekts
+
+| Pfad | Inhalt |
+|---|---|
+| `app/src/main/assets/abnehm-app.html` | Die App selbst (Kopie der Root-Datei) |
+| `app/src/main/java/de/abnehm/app/MainActivity.kt` | WebView-Hülle: lädt die HTML-Datei, aktiviert localStorage, überbrückt Backup-Export/-Import |
+| `app/src/main/AndroidManifest.xml` | App-Manifest |
+| `app/src/main/res/` | Icon (Waage auf Grün), Farben, Theme, Strings |
+| `build.gradle.kts`, `app/build.gradle.kts`, `settings.gradle.kts` | Gradle-Build (Kotlin DSL) |
+| `.github/workflows/android-build.yml` | Baut bei jedem Push automatisch eine APK |
+
+Technik: `minSdk 24` (Android 7.0+), `targetSdk 34`, Kotlin, WebView. Der Backup-Export der App (JSON) wird nativ in den **Download-Ordner** geschrieben, der Import öffnet die native Datei-Auswahl.
+
+### APK ohne eigenen PC bekommen (empfohlen)
+
+1. Diesen Branch/das Repo auf GitHub pushen.
+2. Tab **Actions** → Workflow **„Android Build"** öffnen → letzten Lauf anklicken.
+3. Unten unter **Artifacts** die Datei **`abnehm-app-debug-apk`** herunterladen (ZIP mit der `.apk`).
+4. Die `.apk` aufs Handy kopieren und installieren. Dafür muss auf dem Handy **„Installation aus unbekannten Quellen"** für die jeweilige App (Dateimanager/Browser) erlaubt sein.
+
+> Dies ist ein **Debug**-APK (zum Testen/Selbstinstallieren, nicht für den Play Store). Für eine Play-Store-Veröffentlichung wäre ein signiertes Release-APK/AAB nötig – sag Bescheid, wenn du das brauchst.
+
+### Selbst bauen (mit Android Studio)
+
+1. Repo klonen, in **Android Studio** öffnen (Android SDK 34 wird beim ersten Öffnen automatisch geladen).
+2. Grünes **Run ▶** starten (Emulator oder angeschlossenes Handy) – oder per Terminal:
+   ```bash
+   ./gradlew assembleDebug
+   ```
+   Die fertige APK liegt danach unter `app/build/outputs/apk/debug/app-debug.apk`.
 
 ---
 

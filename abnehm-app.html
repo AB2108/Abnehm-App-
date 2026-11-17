@@ -101,6 +101,8 @@
     border-radius: 6px; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px;
   }
   .tag.meal { background: var(--green-light); color: var(--green-dark); }
+  .chip { background: var(--green-light); color: var(--green-dark); border: none; border-radius: 999px; padding: 7px 12px; font-size: 13px; font-weight: 600; cursor: pointer; line-height: 1; }
+  .chip:active { opacity: 0.6; }
   .tag.train { background: var(--blue-light); color: var(--blue); }
   .tag.habit { background: var(--orange-light); color: var(--orange); }
 
@@ -270,15 +272,11 @@
     </div>
 
     <div class="card">
-      <h2>🍽️ Ernährung (Plan)</h2>
-      <div id="mealChecks"></div>
-    </div>
-
-    <div class="card">
-      <h2>🍴 Eigene Lebensmittel</h2>
+      <h2>🍽️ Ernährung</h2>
       <div class="muted-note" style="margin-top:0;margin-bottom:10px">
-        Etwas anderes gegessen? Trag es hier mit geschätzten Kalorien ein (Eiweiß optional).
+        Trag alles ein, was du gegessen hast – mit (geschätzten) Kalorien. Eiweiß optional.
       </div>
+      <div id="recentFoods"></div>
       <input type="text" id="foodName" placeholder="z. B. Pizza, halb"
         style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:15px;margin-bottom:8px">
       <div style="display:flex;gap:8px">
@@ -392,6 +390,24 @@
       <div id="mealPlanTotal"></div>
     </div>
     <div class="card">
+      <h2>🎯 Ernährungsziele</h2>
+      <div style="display:flex;gap:10px">
+        <div style="flex:1">
+          <label style="font-size:12px;color:var(--muted)">Kalorien-Ziel (kcal/Tag)</label>
+          <input type="number" id="kcalTargetInput" inputmode="numeric"
+            style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:16px;text-align:center;margin-top:4px">
+        </div>
+        <div style="flex:1">
+          <label style="font-size:12px;color:var(--muted)">Eiweiß-Ziel (g/Tag)</label>
+          <input type="number" id="protTargetInput" inputmode="numeric"
+            style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:16px;text-align:center;margin-top:4px">
+        </div>
+      </div>
+      <button class="btn btn-block" style="margin-top:12px" onclick="saveSettings()">Ziele speichern</button>
+      <div class="muted-note">Diese Werte bestimmen den Kalorien-Balken, das „Kalorien im Ziel“-Tagesziel und den automatischen Eiweiß-Haken.</div>
+    </div>
+
+    <div class="card">
       <div class="info-box">
         <b>Getränke-Regel:</b> Wasser, ungesüßter Tee, schwarzer Kaffee – unbegrenzt.
         Säfte, Softdrinks & Alkohol stark reduzieren (das sind die versteckten Kalorien).
@@ -492,51 +508,6 @@
 const WEEKDAYS = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
 
 // Mahlzeiten pro Wochentag (0=So ... 6=Sa)
-// Hinweis: Reis, Nudeln, Kartoffeln & Linsen sind als GEKOCHTES Gewicht angegeben.
-const MEALS = {
-  1: [ // Montag
-    {n:"Frühstück", d:"250 g Magerquark + 100 g Beeren + 30 g Haferflocken", k:"380 kcal · 35 g Eiweiß"},
-    {n:"Mittag", d:"180 g Hähnchenbrust + 200 g Reis (gekocht) + 200 g Brokkoli", k:"650 kcal · 55 g Eiweiß"},
-    {n:"Snack", d:"1 Apfel (150 g) + 30 g Mandeln", k:"280 kcal · 7 g Eiweiß"},
-    {n:"Abend", d:"Rührei aus 3 Eiern (165 g) + 2 Scheiben Vollkornbrot (90 g) + 1 Tomate (100 g)", k:"520 kcal · 30 g Eiweiß"},
-  ],
-  2: [ // Dienstag (Gym)
-    {n:"Frühstück", d:"Rührei aus 3 Eiern (165 g) + 1 Scheibe Vollkornbrot (45 g) + 150 g Skyr", k:"480 kcal · 40 g Eiweiß"},
-    {n:"Mittag", d:"180 g Putenbrust + 250 g Süßkartoffel + 150 g Salat (+ 1 TL Öl, 5 g)", k:"600 kcal · 50 g Eiweiß"},
-    {n:"Snack (vor Gym)", d:"1 Banane (120 g) + 200 g Magerquark", k:"280 kcal · 25 g Eiweiß"},
-    {n:"Abend", d:"250 g Magerquark + 100 g Beeren + 1 EL Honig (20 g)", k:"350 kcal · 32 g Eiweiß"},
-  ],
-  3: [ // Mittwoch
-    {n:"Frühstück", d:"200 g Skyr + 40 g Haferflocken + 100 g Beeren", k:"400 kcal · 30 g Eiweiß"},
-    {n:"Mittag", d:"150 g Lachsfilet + 200 g Kartoffeln (gekocht) + 200 g Gemüse", k:"620 kcal · 38 g Eiweiß"},
-    {n:"Snack", d:"30 g Nüsse + 1 Apfel (150 g)", k:"280 kcal · 7 g Eiweiß"},
-    {n:"Abend", d:"Eintopf: 250 g Linsen (gekocht) + 200 g Gemüse", k:"500 kcal · 28 g Eiweiß"},
-  ],
-  4: [ // Donnerstag (Gym)
-    {n:"Frühstück", d:"250 g Magerquark + 1 Banane (120 g) + 30 g Haferflocken", k:"420 kcal · 35 g Eiweiß"},
-    {n:"Mittag", d:"180 g Hähnchen + 200 g Vollkornnudeln (gekocht) + 150 g Tomatensauce", k:"680 kcal · 55 g Eiweiß"},
-    {n:"Snack", d:"150 g Skyr + 100 g Beeren", k:"150 kcal · 18 g Eiweiß"},
-    {n:"Abend", d:"1 Dose Thunfisch im eigenen Saft (110 g abgetropft) + 2 Scheiben Vollkornbrot (90 g) + ½ Gurke (100 g)", k:"450 kcal · 40 g Eiweiß"},
-  ],
-  5: [ // Freitag
-    {n:"Frühstück", d:"Rührei aus 3 Eiern (165 g) + 1 Scheibe Vollkornbrot (45 g) + ½ Avocado (70 g)", k:"520 kcal · 28 g Eiweiß"},
-    {n:"Mittag", d:"150 g mageres Rinderhack + 150 g Reis (gekocht) + 200 g Gemüsepfanne", k:"640 kcal · 45 g Eiweiß"},
-    {n:"Snack", d:"200 g Magerquark + 1 Apfel (150 g)", k:"230 kcal · 25 g Eiweiß"},
-    {n:"Abend", d:"150 g Salat + 60 g Feta + 150 g Kichererbsen (Dose, abgetropft)", k:"480 kcal · 22 g Eiweiß"},
-  ],
-  6: [ // Samstag (Lauf)
-    {n:"Frühstück", d:"60 g Haferflocken + 150 g Skyr + 100 g Beeren + 20 g Nüsse", k:"520 kcal · 30 g Eiweiß"},
-    {n:"Mittag", d:"1 Vollkorn-Wrap (60 g) + 120 g Hähnchen + 100 g Salat", k:"600 kcal · 45 g Eiweiß"},
-    {n:"Snack", d:"1 Banane (120 g) + 200 g Magerquark", k:"250 kcal · 22 g Eiweiß"},
-    {n:"Abend", d:"300 g Ofengemüse + 150 g Hähnchen", k:"500 kcal · 40 g Eiweiß"},
-  ],
-  0: [ // Sonntag (Flex)
-    {n:"Frühstück", d:"Leicht & proteinreich, z. B. 200 g Magerquark + 100 g Obst", k:"~400 kcal"},
-    {n:"Hauptmahlzeit", d:"Flex-Tag: ein normales Essen (z. B. mit der Familie)", k:"frei – bewusst genießen"},
-    {n:"Abend", d:"Leicht halten, z. B. 150 g Salat + 200 g Magerquark", k:"~350 kcal"},
-  ],
-};
-
 // Trainingsarten – der konkrete Wochentag wird über dayPlan (anpassbar) zugeordnet
 const TRAIN_TYPES = {
   gym:  {tag:"Gym",      t:"Ganzkörper-Krafttraining (siehe Gym-Tab)", icon:"🏋️", short:"Gym"},
@@ -545,9 +516,8 @@ const TRAIN_TYPES = {
 };
 function trainingFor(wd){ return TRAIN_TYPES[dayPlan[wd]] || TRAIN_TYPES.ruhe; }
 
-// Tägliche Gewohnheit (immer)
-const DAILY_HABIT = {tag:"Eiweiß", t:"Eiweiß-Ziel ~150 g – wird automatisch gehakt, sobald erreicht"};
-const PROTEIN_TARGET = 150;
+// Tägliche Gewohnheit (immer) – Text wird dynamisch aus dem Eiweißziel gebaut
+const DAILY_HABIT = {tag:"Eiweiß"};
 
 const GYM_EXERCISES = [
   {id:"beinpresse", n:"Beinpresse", s:"3 × 10–12"},
@@ -562,9 +532,11 @@ const GYM_EXERCISES = [
 // Anpassbarer Wochenplan (0=So ... 6=Sa) – Standard: Di+Do Gym, Sa Laufen
 let dayPlan = load("ab_dayplan", {0:"ruhe",1:"ruhe",2:"gym",3:"ruhe",4:"gym",5:"ruhe",6:"lauf"});
 
-let settings = load("ab_settings", {start:112, goal:105});
+let settings = load("ab_settings", {start:112, goal:105, kcalTarget:2100, protTarget:150});
 function GOAL_START(){ return settings.start; }
 function GOAL_END(){ return settings.goal; }
+function KCAL_TARGET(){ return settings.kcalTarget || 2100; }
+function PROT_TARGET(){ return settings.protTarget || 150; }
 
 /* ================= STATE & STORAGE ================= */
 let viewDate = new Date();
@@ -580,6 +552,7 @@ let weights = load("ab_weights", []);
 let gymWeights = load("ab_gym", {});
 let gymHistory = load("ab_gym_history", []);
 let foodLog = load("ab_foodlog", {});
+let recentFoods = load("ab_recentfoods", []);
 
 /* ================= TAB SWITCHING ================= */
 function switchTab(tab){
@@ -647,23 +620,16 @@ function renderHeute(){
   const key = dayKey();
   const dayChecks = checks[key] || {};
 
-  // Mahlzeiten
-  const mealHtml = (MEALS[wd]||[]).map((m,i)=>{
-    const id = "meal"+i;
-    const done = dayChecks[id];
-    return checkItemHtml(id, "meal", m.n, m.d + " · " + m.k, done);
-  }).join("");
-  document.getElementById("mealChecks").innerHTML = mealHtml;
-
   // Training (aus anpassbarem Wochenplan) + tägliche Eiweiß-Gewohnheit
   const tr = trainingFor(wd);
   let trainHtml = checkItemHtml("train0", "train", tr.tag, tr.t, dayChecks["train0"]);
-  trainHtml += checkItemHtml("habit_protein", "habit", DAILY_HABIT.tag, DAILY_HABIT.t, dayChecks["habit_protein"]);
+  trainHtml += checkItemHtml("habit_protein", "habit", DAILY_HABIT.tag, "Eiweiß-Ziel ~"+PROT_TARGET()+" g – wird automatisch gehakt, sobald erreicht", dayChecks["habit_protein"]);
   document.getElementById("trainChecks").innerHTML = trainHtml;
 
   renderWater();
   renderSteps();
   renderFoodLog();
+  renderRecentFoods();
   attachCheckHandlers();
   updateRing();
 }
@@ -676,11 +642,11 @@ function checkItemHtml(id, tagClass, tagText, text, done){
 }
 
 function attachCheckHandlers(){
-  document.querySelectorAll("#mealChecks .check-item, #trainChecks .check-item").forEach(el=>{
+  document.querySelectorAll("#trainChecks .check-item").forEach(el=>{
     // Eiweiß-Haken ist vollautomatisch (vom Eiweiß-Ist abhängig) – nicht manuell schaltbar
     if(el.dataset.id==="habit_protein"){
       el.style.cursor="default";
-      el.onclick = ()=>{ const a=actualForDate(dayKey()); alert("Dieser Haken setzt sich automatisch bei "+PROTEIN_TARGET+" g Eiweiß.\nAktuell: "+a.prot+" g."); };
+      el.onclick = ()=>{ const a=actualForDate(dayKey()); alert("Dieser Haken setzt sich automatisch bei "+PROT_TARGET()+" g Eiweiß.\nAktuell: "+a.prot+" g."); };
       return;
     }
     el.onclick = ()=>{
@@ -742,11 +708,42 @@ function addFood(){
     foodLog[key][foodEditIndex] = {name, kcal, prot}; // bestehenden Eintrag ändern
   } else {
     foodLog[key].push({name, kcal, prot});
+    pushRecent(name, kcal, prot);
   }
   save("ab_foodlog", foodLog);
   cancelFoodEdit();
   renderFoodLog();
+  renderRecentFoods();
   updateRing();
+}
+
+// ---- Schnellauswahl „Zuletzt gegessen" ----
+function pushRecent(name, kcal, prot){
+  recentFoods = recentFoods.filter(f=>f.name.toLowerCase() !== name.toLowerCase());
+  recentFoods.unshift({name, kcal, prot});
+  if(recentFoods.length > 8) recentFoods = recentFoods.slice(0, 8);
+  save("ab_recentfoods", recentFoods);
+}
+function quickAddFood(i){
+  const f = recentFoods[i];
+  if(!f) return;
+  const key = dayKey();
+  foodLog[key] = foodLog[key] || [];
+  foodLog[key].push({name:f.name, kcal:f.kcal, prot:f.prot||0});
+  save("ab_foodlog", foodLog);
+  pushRecent(f.name, f.kcal, f.prot||0); // nach oben sortieren
+  renderFoodLog();
+  renderRecentFoods();
+  updateRing();
+}
+function renderRecentFoods(){
+  const el = document.getElementById("recentFoods");
+  if(!el) return;
+  if(!recentFoods.length){ el.innerHTML = ""; return; }
+  el.innerHTML = `<div class="muted-note" style="margin:0 0 6px">Zuletzt gegessen – tippen zum Hinzufügen:</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">`
+    + recentFoods.map((f,i)=>`<button type="button" class="chip" onclick="quickAddFood(${i})">+ ${f.name} <span style="opacity:.65">${f.kcal} kcal</span></button>`).join("")
+    + `</div>`;
 }
 function editFood(i){
   const key = dayKey();
@@ -810,12 +807,11 @@ function renderFoodLog(){
 
 function updateRing(){
   const key = dayKey();
-  const wd = viewDate.getDay();
 
   // Eiweiß-Ist berechnen und Haken automatisch setzen/zurücksetzen
   // (keine leeren Tages-Einträge anlegen – das verfälschte sonst die Statistik)
   const act = actualForDate(key);
-  const protReached = act.prot >= PROTEIN_TARGET;
+  const protReached = act.prot >= PROT_TARGET();
   const hasProt = checks[key] && checks[key].habit_protein;
   if(protReached && !hasProt){
     checks[key] = checks[key] || {};
@@ -828,13 +824,14 @@ function updateRing(){
   const protEl = document.querySelector('#trainChecks .check-item[data-id="habit_protein"]');
   if(protEl) protEl.classList.toggle("done", protReached);
 
+  const kcalTarget = KCAL_TARGET();
   const dayChecks = checks[key] || {};
   let total=0, done=0;
-  (MEALS[wd]||[]).forEach((m,i)=>{ total++; if(dayChecks["meal"+i]) done++; });
-  total++; if(dayChecks["train0"]) done++; // Training
-  total++; if(dayChecks["habit_protein"]) done++; // Eiweiß
-  total++; if((water[key]||0)>=8) done++; // Wasser
-  total++; if((steps[key]||0)>=8000) done++; // Schritte
+  total++; if(dayChecks["train0"]) done++;                   // Training
+  total++; if(dayChecks["habit_protein"]) done++;            // Eiweiß
+  total++; if((water[key]||0)>=8) done++;                    // Wasser
+  total++; if((steps[key]||0)>=8000) done++;                 // Schritte
+  total++; if(act.kcal>0 && act.kcal<=kcalTarget) done++;    // Kalorien im Ziel (etwas gegessen & nicht drüber)
 
   const pct = total? Math.round(done/total*100):0;
   const circ = 207;
@@ -849,16 +846,19 @@ function updateRing(){
   // Kalorien-Ist (abgehakte Mahlzeiten + eigene Lebensmittel)
   const kcalEl = document.getElementById("kcalToday");
   if(kcalEl){
-    const target = 2100;
+    const target = kcalTarget;
     const pctK = Math.min(100, Math.round(act.kcal/target*100));
     const over = act.kcal > target;
+    const remain = target - act.kcal;
+    const remainText = act.kcal<=0 ? "" :
+      (over ? `${Math.abs(remain)} kcal über Ziel · ` : `Noch ${remain} kcal bis Ziel · `);
     kcalEl.innerHTML = `
       <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
         <span style="font-weight:700">🍽️ Gegessen: ${act.kcal} kcal</span>
         <span style="color:var(--muted)">Ziel ~${target} · Eiweiß ${act.prot} g</span>
       </div>
       <div class="goalbar"><div class="goalbar-fill" style="width:${pctK}%;${over?'background:var(--orange)':''}"></div></div>
-      <div class="muted-note" style="margin-top:6px">Zählt abgehakte Plan-Mahlzeiten + eigene Lebensmittel.</div>`;
+      <div class="muted-note" style="margin-top:6px">${remainText}Zählt deine eingetragenen Lebensmittel.</div>`;
   }
 }
 
@@ -987,88 +987,79 @@ function saveSettings(){
   const g = parseFloat(document.getElementById("goalInput").value.replace(",","."));
   if(!s || !g || s<30 || g<30 || s>300 || g>300){ alert("Bitte gültige Werte eingeben."); return; }
   if(g >= s){ alert("Das Zielgewicht muss kleiner als das Startgewicht sein."); return; }
-  settings = {start:s, goal:g};
+  const kc = parseInt(document.getElementById("kcalTargetInput").value)||0;
+  const pt = parseInt(document.getElementById("protTargetInput").value)||0;
+  if(kc<800 || kc>6000){ alert("Bitte ein Kalorien-Ziel zwischen 800 und 6000 kcal eingeben."); return; }
+  if(pt<30 || pt>400){ alert("Bitte ein Eiweiß-Ziel zwischen 30 und 400 g eingeben."); return; }
+  settings = {start:s, goal:g, kcalTarget:kc, protTarget:pt};
   save("ab_settings", settings);
   renderGewicht();
-  alert("Ziel gespeichert: "+s+" kg → "+g+" kg 🎯");
+  renderHeute();
+  alert("Gespeichert ✓\nZiel: "+s+" kg → "+g+" kg · "+kc+" kcal · "+pt+" g Eiweiß");
 }
 function fillSettings(){
   document.getElementById("startInput").value = settings.start;
   document.getElementById("goalInput").value = settings.goal;
+  const kcEl = document.getElementById("kcalTargetInput");
+  const ptEl = document.getElementById("protTargetInput");
+  if(kcEl) kcEl.value = KCAL_TARGET();
+  if(ptEl) ptEl.value = PROT_TARGET();
 }
 
 /* ================= ESSEN: IST-BERECHNUNG ================= */
-function parseMK(k){
-  const km = k.match(/(\d+)\s*kcal/);
-  const pm = k.match(/(\d+)\s*g Eiweiß/);
-  return { kcal: km?parseInt(km[1]):0, prot: pm?parseInt(pm[1]):0 };
-}
-// Tatsächlich gegessen an einem Datum = abgehakte Plan-Mahlzeiten + eigene Lebensmittel
+// Tatsächlich gegessen an einem Datum = die selbst eingetragenen Lebensmittel
 function actualForDate(dateKey){
-  const wd = new Date(dateKey+"T00:00").getDay();
-  const dc = checks[dateKey] || {};
   let kcal=0, prot=0, items=[];
-  (MEALS[wd]||[]).forEach((m,i)=>{
-    if(dc["meal"+i]){ const mk=parseMK(m.k); kcal+=mk.kcal; prot+=mk.prot; items.push({name:m.n, kcal:mk.kcal, prot:mk.prot, plan:true}); }
-  });
-  (foodLog[dateKey]||[]).forEach(f=>{ kcal+=f.kcal; prot+=(f.prot||0); items.push({name:f.name, kcal:f.kcal, prot:f.prot||0, plan:false}); });
+  (foodLog[dateKey]||[]).forEach(f=>{ kcal+=f.kcal; prot+=(f.prot||0); items.push({name:f.name, kcal:f.kcal, prot:f.prot||0}); });
   return {kcal, prot, items};
 }
 
-/* ================= ESSEN-TAB ================= */
+/* ================= ESSEN-TAB (Tagesübersicht) ================= */
 function renderMealPlan(){
   updateDateNav();
-  const wd = viewDate.getDay();
   const key = dayKey();
-  let tag = "";
-  if(dayPlan[wd]==="gym") tag=" 🏋️"; else if(dayPlan[wd]==="lauf") tag=" 🏃";
-  if(wd===0) tag+=" (Flex)";
-  document.getElementById("mealPlanTitle").textContent = (isToday()?"Heute – ":"") + WEEKDAYS[wd] + tag;
-  const meals = MEALS[wd]||[];
-  document.getElementById("mealPlanBody").innerHTML = meals.map(m=>
-    `<div class="meal-block"><div class="mname">${m.n}</div><div class="mdesc">${m.d}</div><div class="mkcal">${m.k}</div></div>`
-  ).join("");
+  const act = actualForDate(key);
+  const kcalTarget = KCAL_TARGET(), protTarget = PROT_TARGET();
 
-  // Plan-Tagessumme (Soll)
-  let kcal=0, prot=0, approx=false;
-  meals.forEach(m=>{
-    const mk = parseMK(m.k);
-    if(mk.kcal) kcal += mk.kcal; else approx = true;
-    prot += mk.prot;
-    if(/~|frei/.test(m.k)) approx = true;
-  });
-  const pre = approx ? "ca. " : "";
-  let html = `<div class="total-box">
+  document.getElementById("mealPlanTitle").textContent = isToday()
+    ? "Heute gegessen"
+    : "Gegessen am " + viewDate.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"2-digit"});
+
+  // Liste der gegessenen Lebensmittel
+  if(act.items.length>0){
+    document.getElementById("mealPlanBody").innerHTML = act.items.map(it=>
+      `<div class="meal-block"><div class="mdesc">🍴 ${it.name}</div><div class="mkcal">${it.kcal} kcal${it.prot?` · ${it.prot} g Eiweiß`:''}</div></div>`
+    ).join("");
+  } else {
+    document.getElementById("mealPlanBody").innerHTML =
+      `<div class="empty">Für diesen Tag noch nichts eingetragen.<br>Trag deine Lebensmittel im „Heute“-Tab ein.</div>`;
+  }
+
+  // Tagessumme (Ist) vs. Ziel
+  const over = act.kcal > kcalTarget;
+  const remain = kcalTarget - act.kcal;
+  let html = `<div class="total-box" style="margin-top:10px">
     <div class="total-row">
-      <span class="total-label">Plan-Tagessumme (Soll)</span>
-      <span><span class="total-val">${pre}${kcal}</span> <span class="total-target">/ ~2.100 kcal</span></span>
+      <span class="total-label">Kalorien (Ist)</span>
+      <span><span class="total-val">${act.kcal}</span> <span class="total-target">/ ${kcalTarget} kcal</span></span>
     </div>
     <div class="total-row">
-      <span class="total-label">davon Eiweiß (Soll)</span>
-      <span><span class="total-val">${pre}${prot} g</span> <span class="total-target">/ ~150–170 g</span></span>
+      <span class="total-label">davon Eiweiß</span>
+      <span><span class="total-val">${act.prot} g</span> <span class="total-target">/ ${protTarget} g</span></span>
     </div>
-    ${approx ? '<div class="total-note">„ca.“ – an diesem Tag ist mindestens eine Mahlzeit flexibel/ohne feste Angabe.</div>' : ''}
+    ${act.kcal>0 ? `<div class="total-note">${over ? Math.abs(remain)+" kcal über dem Ziel." : "Noch "+remain+" kcal bis zum Ziel."}</div>` : ''}
   </div>`;
 
-  // Ist: tatsächlich gegessen am AUSGEWÄHLTEN Tag (abgehakte Mahlzeiten + eigene Lebensmittel)
-  const act = actualForDate(key);
-  const istLabel = isToday() ? "Heute tatsächlich gegessen (Ist)"
-    : "Gegessen am " + viewDate.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"2-digit"}) + " (Ist)";
-  if(act.items.length>0){
-    html += `<div class="total-box" style="background:var(--blue-light);margin-top:10px">
-      <div class="total-row"><span class="total-label" style="color:var(--blue)">${istLabel}</span></div>
-      ${act.items.map(it=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0">
-        <span>${it.plan?'✓':'🍴'} ${it.name}</span>
-        <span style="white-space:nowrap">${it.kcal} kcal${it.prot?` · ${it.prot} g E`:''}</span></div>`).join("")}
-      <div class="total-row" style="margin-top:6px;border-top:1px solid rgba(37,99,235,0.2);padding-top:8px">
-        <span class="total-label" style="color:var(--blue)">Summe Ist</span>
-        <span class="total-val" style="color:var(--blue)">${act.kcal} kcal · ${act.prot} g E</span>
+  // 7-Tage-Schnitt
+  let kcalSum=0, protSum=0, days=0;
+  lastNDates(7).forEach(k=>{ const a=actualForDate(k); if(a.kcal>0){ kcalSum+=a.kcal; protSum+=a.prot; days++; } });
+  if(days>0){
+    html += `<div class="total-box" style="margin-top:10px">
+      <div class="total-row">
+        <span class="total-label">Ø der letzten 7 Tage</span>
+        <span class="total-val">${Math.round(kcalSum/days)} kcal · ${Math.round(protSum/days)} g E</span>
       </div>
-    </div>`;
-  } else {
-    html += `<div class="total-note" style="margin-top:8px">
-      <b>Ist (${isToday()?"heute":"dieser Tag"}):</b> Für diesen Tag ist nichts abgehakt oder eingetragen.
-      Hake im „Heute“-Tab Mahlzeiten ab oder füge eigene Lebensmittel hinzu – dann erscheint hier die tatsächliche Tagessumme.
+      <div class="total-note">Schnitt über ${days} Tag${days>1?'e':''} mit Eintrag.</div>
     </div>`;
   }
   document.getElementById("mealPlanTotal").innerHTML = html;
@@ -1277,7 +1268,7 @@ function renderDashboard(){
   gymHistory.forEach(s=>{ if(s.weights && Object.keys(s.weights).length>0) allDates.add(s.date); });
   weights.forEach(w=>allDates.add(w.date));
   let protDays=0;
-  allDates.forEach(k=>{ if(actualForDate(k).prot>=PROTEIN_TARGET) protDays++; });
+  allDates.forEach(k=>{ if(actualForDate(k).prot>=PROT_TARGET()) protDays++; });
   const streak = currentStreak();
 
   const chg = (v,unit,goodIfNeg=true)=>{
@@ -1339,7 +1330,7 @@ function renderDashboard(){
 }
 
 /* ================= BACKUP / RESTORE ================= */
-const STORE_KEYS = ["ab_checks","ab_water","ab_steps","ab_weights","ab_gym","ab_gym_history","ab_settings","ab_dayplan","ab_foodlog"];
+const STORE_KEYS = ["ab_checks","ab_water","ab_steps","ab_weights","ab_gym","ab_gym_history","ab_settings","ab_dayplan","ab_foodlog","ab_recentfoods"];
 
 function exportData(){
   // Sichert ALLE Daten: jeder localStorage-Schlüssel enthält sämtliche Tage/Bereiche
@@ -1348,13 +1339,9 @@ function exportData(){
   dump._exported = new Date().toISOString();
   dump._version = 1;
 
-  const blob = new Blob([JSON.stringify(dump,null,2)], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "abnehm-backup-"+fmtDate(new Date())+".json";
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const json = JSON.stringify(dump,null,2);
+  const fileName = "abnehm-backup-"+fmtDate(new Date())+".json";
+  const sizeKB = (new Blob([json]).size/1024).toFixed(1);
 
   // Übersicht: was wurde gesichert?
   const summary =
@@ -1365,7 +1352,27 @@ function exportData(){
     "• Tage mit Wasser-/Schritte-Daten: "+Object.keys(water).length+" / "+Object.keys(steps).length+"\n"+
     "• Absolvierte Workouts: "+gymHistory.length+"\n"+
     "• Ziel & Wochenplan: gesichert\n\n"+
-    "Dateigröße: "+(blob.size/1024).toFixed(1)+" KB";
+    "Dateigröße: "+sizeKB+" KB";
+
+  // In der Android-App direkt über die native Brücke in den Download-Ordner schreiben
+  // (der WebView löst Blob-Downloads nicht zuverlässig aus).
+  if(window.AndroidBackup && typeof AndroidBackup.saveBase64 === "function"){
+    try {
+      const base64 = btoa(unescape(encodeURIComponent(json))); // UTF-8-sicher
+      AndroidBackup.saveBase64(base64, "application/json");
+      alert(summary + "\n\nGespeichert im Ordner „Download“ als:\n" + fileName);
+      return;
+    } catch(e){ /* unten auf Browser-Download zurückfallen */ }
+  }
+
+  // Browser: normaler Datei-Download
+  const blob = new Blob([json], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
   alert(summary);
 }
 
@@ -1381,9 +1388,9 @@ function importData(input){
       // neu laden
       checks=load("ab_checks",{}); water=load("ab_water",{}); steps=load("ab_steps",{});
       weights=load("ab_weights",[]); gymWeights=load("ab_gym",{});
-      gymHistory=load("ab_gym_history",[]); settings=load("ab_settings",{start:112,goal:105});
+      gymHistory=load("ab_gym_history",[]); settings=load("ab_settings",{start:112,goal:105,kcalTarget:2100,protTarget:150});
       dayPlan=load("ab_dayplan",{0:"ruhe",1:"ruhe",2:"gym",3:"ruhe",4:"gym",5:"ruhe",6:"lauf"});
-      foodLog=load("ab_foodlog",{});
+      foodLog=load("ab_foodlog",{}); recentFoods=load("ab_recentfoods",[]);
       fillSettings(); renderHeute(); renderGewicht(); renderMealPlan(); renderGym(); renderDashboard();
       alert("Backup erfolgreich wiederhergestellt! ✅");
     } catch(err){ alert("Datei konnte nicht gelesen werden."); }

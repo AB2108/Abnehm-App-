@@ -1330,7 +1330,7 @@ function renderDashboard(){
 }
 
 /* ================= BACKUP / RESTORE ================= */
-const STORE_KEYS = ["ab_checks","ab_water","ab_steps","ab_weights","ab_gym","ab_gym_history","ab_settings","ab_dayplan","ab_foodlog"];
+const STORE_KEYS = ["ab_checks","ab_water","ab_steps","ab_weights","ab_gym","ab_gym_history","ab_settings","ab_dayplan","ab_foodlog","ab_recentfoods"];
 
 function exportData(){
   // Sichert ALLE Daten: jeder localStorage-Schlüssel enthält sämtliche Tage/Bereiche
@@ -1339,13 +1339,9 @@ function exportData(){
   dump._exported = new Date().toISOString();
   dump._version = 1;
 
-  const blob = new Blob([JSON.stringify(dump,null,2)], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "abnehm-backup-"+fmtDate(new Date())+".json";
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const json = JSON.stringify(dump,null,2);
+  const fileName = "abnehm-backup-"+fmtDate(new Date())+".json";
+  const sizeKB = (new Blob([json]).size/1024).toFixed(1);
 
   // Übersicht: was wurde gesichert?
   const summary =
@@ -1356,7 +1352,27 @@ function exportData(){
     "• Tage mit Wasser-/Schritte-Daten: "+Object.keys(water).length+" / "+Object.keys(steps).length+"\n"+
     "• Absolvierte Workouts: "+gymHistory.length+"\n"+
     "• Ziel & Wochenplan: gesichert\n\n"+
-    "Dateigröße: "+(blob.size/1024).toFixed(1)+" KB";
+    "Dateigröße: "+sizeKB+" KB";
+
+  // In der Android-App direkt über die native Brücke in den Download-Ordner schreiben
+  // (der WebView löst Blob-Downloads nicht zuverlässig aus).
+  if(window.AndroidBackup && typeof AndroidBackup.saveBase64 === "function"){
+    try {
+      const base64 = btoa(unescape(encodeURIComponent(json))); // UTF-8-sicher
+      AndroidBackup.saveBase64(base64, "application/json");
+      alert(summary + "\n\nGespeichert im Ordner „Download“ als:\n" + fileName);
+      return;
+    } catch(e){ /* unten auf Browser-Download zurückfallen */ }
+  }
+
+  // Browser: normaler Datei-Download
+  const blob = new Blob([json], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
   alert(summary);
 }
 
@@ -1372,9 +1388,9 @@ function importData(input){
       // neu laden
       checks=load("ab_checks",{}); water=load("ab_water",{}); steps=load("ab_steps",{});
       weights=load("ab_weights",[]); gymWeights=load("ab_gym",{});
-      gymHistory=load("ab_gym_history",[]); settings=load("ab_settings",{start:112,goal:105});
+      gymHistory=load("ab_gym_history",[]); settings=load("ab_settings",{start:112,goal:105,kcalTarget:2100,protTarget:150});
       dayPlan=load("ab_dayplan",{0:"ruhe",1:"ruhe",2:"gym",3:"ruhe",4:"gym",5:"ruhe",6:"lauf"});
-      foodLog=load("ab_foodlog",{});
+      foodLog=load("ab_foodlog",{}); recentFoods=load("ab_recentfoods",[]);
       fillSettings(); renderHeute(); renderGewicht(); renderMealPlan(); renderGym(); renderDashboard();
       alert("Backup erfolgreich wiederhergestellt! ✅");
     } catch(err){ alert("Datei konnte nicht gelesen werden."); }
